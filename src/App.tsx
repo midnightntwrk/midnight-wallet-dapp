@@ -22,7 +22,12 @@ import {
 import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { InitialAPI, ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import './styles.css';
-import { createSimpleContractInstance, DemoCircuits, DemoContract } from './lib/types';
+import {
+  createSimpleContractInstance,
+  DemoCircuits,
+  DemoContract,
+  DemoProviders,
+} from './lib/types';
 import { transferUnshieldedFromFaucet } from './lib/faucet';
 import { bech32m } from 'bech32';
 import {
@@ -30,7 +35,6 @@ import {
   type NetworkId,
 } from '@midnight-ntwrk/midnight-js-network-id';
 import * as CompiledContract from './contract/index.js';
-import { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MidnightWindow = Window & { midnight?: Record<string, any>; cardano?: unknown };
@@ -64,7 +68,7 @@ export default function App() {
   const [availableAPIs, setAvailableAPIs] = useState<InitialAPI[]>([]);
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
-  const [providers, setProviders] = useState<MidnightProviders | null>(null);
+  const [providers, setProviders] = useState<DemoProviders | null>(null);
 
   const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(
     null

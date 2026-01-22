@@ -120,6 +120,15 @@ Services:
 - **Indexer**: port 8088
 - **Midnight Node**: port 9944
 
+## Development
+
+Pre-push hooks are configured via Husky to run:
+
+- `yarn lint` - ESLint checks
+- `yarn tsc --noEmit` - TypeScript type checking
+
+Hooks are automatically installed when running `yarn install`.
+
 ## Security
 
 - Keys never leave the wallet; all signing happens in Lace

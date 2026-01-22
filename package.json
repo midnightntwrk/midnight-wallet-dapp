@@ -18,7 +18,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@apollo/client": "^4.0.8",
@@ -64,6 +65,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "husky": "^9.1.7",
     "prettier": "^3.4.2",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
