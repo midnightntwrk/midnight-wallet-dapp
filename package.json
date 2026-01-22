@@ -14,7 +14,11 @@
     "env:down": "docker compose -f compose.yml down",
     "compact": "COMPACTC_VERSION=0.28.0-rc.0 yarn fetch-compactc && yarn contract-demo",
     "contract-demo": "COMPACTC_VERSION=0.28.0-rc.0 yarn run-compactc src/contract/contracts/unshielded-demo.compact src/contract/build/unshielded-demo",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@apollo/client": "^4.0.8",
@@ -45,14 +49,22 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.50.0",
+    "@eslint/js": "^9.18.0",
     "@midnight-ntwrk/midnight-js-compact": "^3.0.0-alpha.15",
+    "@playwright/test": "^1.50.0",
     "@types/lodash": "^4",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.22.0",
+    "@typescript-eslint/parser": "^8.22.0",
     "@vitejs/plugin-react": "^5.1.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "prettier": "^3.4.2",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "typescript": "^5.9.3",

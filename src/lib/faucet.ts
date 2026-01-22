@@ -16,14 +16,18 @@
 import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
 import { ShieldedWallet } from '@midnight-ntwrk/wallet-sdk-shielded';
 import { DustWallet } from '@midnight-ntwrk/wallet-sdk-dust-wallet';
-import { PublicKey, createKeystore, UnshieldedWallet, InMemoryTransactionHistoryStorage } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
+import {
+  PublicKey,
+  createKeystore,
+  UnshieldedWallet,
+  InMemoryTransactionHistoryStorage,
+} from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import { WalletFacade } from '@midnight-ntwrk/wallet-sdk-facade';
 import * as ledger from '@midnight-ntwrk/ledger-v7';
 import { NetworkId } from '@midnight-ntwrk/wallet-sdk-abstractions';
 import * as Rx from 'rxjs';
 
 const FAUCET_SEED = '0000000000000000000000000000000000000000000000000000000000000002';
-
 
 const getShieldedSeed = (seed: string): Uint8Array => {
   const seedBuffer = Buffer.from(seed, 'hex');
@@ -83,7 +87,7 @@ const tokenValue = (value: bigint): bigint => value * 10n ** 6n;
 
 const waitForFullySynced = async (facade: WalletFacade): Promise<void> => {
   await Rx.firstValueFrom(facade.state().pipe(Rx.filter((s) => s.isSynced)));
-}
+};
 
 export async function transferUnshieldedFromFaucet(
   receiverUnshieldedAddress: string,
@@ -121,7 +125,10 @@ export async function transferUnshieldedFromFaucet(
   const dustParameters = ledger.LedgerParameters.initialParameters().dust;
   const faucetDust = Dust.startWithSeed(faucetDustSeed, dustParameters);
 
-  const faucetUnshieldedKeystore = createKeystore(faucetUnshieldedSeed, NetworkId.NetworkId.Undeployed);
+  const faucetUnshieldedKeystore = createKeystore(
+    faucetUnshieldedSeed,
+    NetworkId.NetworkId.Undeployed
+  );
   const faucetUnshielded = UnshieldedWallet({
     ...configuration,
     txHistoryStorage: new InMemoryTransactionHistoryStorage(),
@@ -131,7 +138,7 @@ export async function transferUnshieldedFromFaucet(
 
   await faucetFacade.start(
     ledger.ZswapSecretKeys.fromSeed(faucetShieldedSeed),
-    ledger.DustSecretKey.fromSeed(faucetDustSeed),
+    ledger.DustSecretKey.fromSeed(faucetDustSeed)
   );
 
   console.log('transferUnshieldedFromFaucet: waiting for sync...');
@@ -156,12 +163,12 @@ export async function transferUnshieldedFromFaucet(
           ],
         },
       ],
-      ttl,
+      ttl
     );
 
     console.log('transferUnshieldedFromFaucet: signing transaction...');
     const signedTx = await faucetFacade.signTransaction(transfer.transaction, (payload) =>
-      faucetUnshieldedKeystore.signData(payload),
+      faucetUnshieldedKeystore.signData(payload)
     );
 
     console.log('transferUnshieldedFromFaucet: finalizing transaction...');

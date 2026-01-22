@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ContractDemo } from '../contract/index'
+import { ContractDemo } from '../contract/index';
 import { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 
 export type DemoContract = ContractDemo.Contract<undefined>;

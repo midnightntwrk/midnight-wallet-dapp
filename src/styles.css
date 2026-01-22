@@ -10,15 +10,21 @@
   --bg-tertiary: #141414;
   --text-primary: #ffffff;
   --text-secondary: #a8a8a8;
-  --accent: #0080FF;
-  --accent-hover: #0066CC;
-  --success: #00D66F;
+  --accent: #0080ff;
+  --accent-hover: #0066cc;
+  --success: #00d66f;
   --border: #1a1a1a;
   --shadow: rgba(0, 0, 0, 0.8);
 }
 
 body {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family:
+    'Outfit',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    system-ui,
+    sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
@@ -90,7 +96,7 @@ body {
   font-weight: 500;
 }
 
-.status-badge[data-connected="true"] {
+.status-badge[data-connected='true'] {
   border-color: var(--success);
 }
 
@@ -101,14 +107,19 @@ body {
   background: var(--text-secondary);
 }
 
-.status-badge[data-connected="true"] .status-dot {
+.status-badge[data-connected='true'] .status-dot {
   background: var(--success);
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .network-info {
@@ -235,7 +246,8 @@ body {
   font-size: 0.85rem;
 }
 
-.address, .color-code {
+.address,
+.color-code {
   display: block;
   margin-top: 0.4rem;
   font-family: 'Courier New', monospace;

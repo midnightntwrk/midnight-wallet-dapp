@@ -20,18 +20,22 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 
 ## Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `yarn dev` | Start development server (port 5173) |
-| `yarn build` | Build for production |
-| `yarn preview` | Preview production build |
-| `yarn compact` | Compile Compact contracts |
-| `yarn contract-demo` | Generate contract build artifacts |
-| `yarn build:docker` | Build Docker image |
-| `yarn dapp:docker` | Run dApp via Docker Compose (port 8080) |
-| `yarn env:up` | Start local blockchain environment |
-| `yarn env:down` | Stop local blockchain environment |
-| `yarn test:e2e` | Run Playwright e2e smoke tests |
+| Script               | Description                             |
+| -------------------- | --------------------------------------- |
+| `yarn dev`           | Start development server (port 5173)    |
+| `yarn build`         | Build for production                    |
+| `yarn preview`       | Preview production build                |
+| `yarn compact`       | Compile Compact contracts               |
+| `yarn contract-demo` | Generate contract build artifacts       |
+| `yarn build:docker`  | Build Docker image                      |
+| `yarn dapp:docker`   | Run dApp via Docker Compose (port 8080) |
+| `yarn env:up`        | Start local blockchain environment      |
+| `yarn env:down`      | Stop local blockchain environment       |
+| `yarn test:e2e`      | Run Playwright e2e smoke tests          |
+| `yarn lint`          | Run ESLint                              |
+| `yarn lint:fix`      | Run ESLint with auto-fix                |
+| `yarn format`        | Format code with Prettier               |
+| `yarn format:check`  | Check code formatting                   |
 
 ## Project Structure
 
@@ -63,13 +67,13 @@ src/
 
 The app integrates with Midnight through these provider layers:
 
-| Provider | Purpose |
-|----------|---------|
+| Provider                    | Purpose                                                      |
+| --------------------------- | ------------------------------------------------------------ |
 | `levelPrivateStateProvider` | IndexedDB-backed storage for private states and signing keys |
-| `indexerPublicDataProvider` | GraphQL Indexer client for blockchain data |
-| `FetchZkConfigProvider` | Fetches ZK keys and zkIR from the node |
-| `httpClientProofProvider` | HTTP client to the proof server |
-| Wallet Adapter | DApp connector for key management and transaction submission |
+| `indexerPublicDataProvider` | GraphQL Indexer client for blockchain data                   |
+| `FetchZkConfigProvider`     | Fetches ZK keys and zkIR from the node                       |
+| `httpClientProofProvider`   | HTTP client to the proof server                              |
+| Wallet Adapter              | DApp connector for key management and transaction submission |
 
 The wallet connector is expected at `window.midnight.lace` and must support `enable`, `getServiceURIs`, `balanceTransaction`, `submitTransaction`.
 
@@ -87,12 +91,14 @@ The wallet connector is expected at `window.midnight.lace` and must support `ena
 ## Docker Deployment
 
 **Build and run:**
+
 ```bash
 docker build -t midnight-lace-dapp .
 docker run -p 8080:8080 midnight-lace-dapp
 ```
 
 **Or via Docker Compose:**
+
 ```bash
 yarn dapp:docker
 ```
@@ -109,6 +115,7 @@ yarn env:down    # Stop services
 ```
 
 Services:
+
 - **Proof Server**: port 6300
 - **Indexer**: port 8088
 - **Midnight Node**: port 9944

@@ -13,28 +13,28 @@
  * limitations under the License.
  */
 
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import wasm from 'vite-plugin-wasm'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
-import fs from 'fs'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
+import fs from 'fs';
+import path from 'path';
 // ❌ remove this line:
 // import topLevelAwait from 'vite-plugin-top-level-await'
 
 export default defineConfig({
   define: {
-    '__MIDNIGHT_STORAGE_PASSWORD__': JSON.stringify(process.env.MIDNIGHT_STORAGE_PASSWORD || ''),
-    'global': 'globalThis',
+    __MIDNIGHT_STORAGE_PASSWORD__: JSON.stringify(process.env.MIDNIGHT_STORAGE_PASSWORD || ''),
+    global: 'globalThis',
   },
   resolve: {
     alias: {
-      'process': 'process/browser',
-      'buffer': 'buffer',
-      'util': 'util',
-      'crypto': 'crypto-browserify',
-      'stream': 'stream-browserify',
-    }
+      process: 'process/browser',
+      buffer: 'buffer',
+      util: 'util',
+      crypto: 'crypto-browserify',
+      stream: 'stream-browserify',
+    },
   },
   // ❌ remove topLevelAwait() from plugins:
   plugins: [
@@ -54,16 +54,16 @@ export default defineConfig({
         server.middlewares.use((req, res, next) => {
           // Only apply to /contract/* paths - return 404 if file doesn't exist
           if (req.url?.startsWith('/contract/')) {
-            const filePath = path.join(server.config.root, 'src', req.url)
-            
+            const filePath = path.join(server.config.root, 'src', req.url);
+
             if (!fs.existsSync(filePath)) {
-              res.statusCode = 404
-              res.end('404 Not Found')
-              return
+              res.statusCode = 404;
+              res.end('404 Not Found');
+              return;
             }
           }
-          next()
-        })
+          next();
+        });
       },
     },
   ],
@@ -80,4 +80,4 @@ export default defineConfig({
       allow: ['..'],
     },
   },
-})
+});

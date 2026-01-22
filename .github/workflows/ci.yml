@@ -22,6 +22,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Lint
+        run: yarn lint
+
+      - name: Format check
+        run: yarn format:check
+
       - name: Typecheck
         run: yarn tsc --noEmit
 
