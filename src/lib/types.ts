@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { ContractDemo } from '../contract/index';
+import * as CompiledContract from '../contract/index';
 import { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 
-export type DemoContract = ContractDemo.Contract<undefined>;
+export type DemoContract = CompiledContract.Contract<undefined>;
 
 export type DemoCircuits = ImpureCircuitId<DemoContract>;
 
 export type DemoProviders = MidnightProviders<DemoCircuits>;
 
-export const createSimpleContractInstance = (): DemoContract => new ContractDemo.Contract({});
+export const createSimpleContractInstance = (): DemoContract => new CompiledContract.Contract({});
