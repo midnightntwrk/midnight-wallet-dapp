@@ -30,7 +30,7 @@ import {
   type NetworkId,
 } from '@midnight-ntwrk/midnight-js-network-id';
 import * as CompiledContract from './contract/index.js';
-import {MidnightProviders} from "@midnight-ntwrk/midnight-js-types";
+import { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MidnightWindow = Window & { midnight?: Record<string, any>; cardano?: unknown };
@@ -66,7 +66,9 @@ export default function App() {
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<MidnightProviders | null>(null);
 
-  const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(null);
+  const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(
+    null
+  );
   const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
 
   const [mintAmount, setMintAmount] = useState<string>('1000');
