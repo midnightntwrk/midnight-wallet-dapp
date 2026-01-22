@@ -1,72 +1,45 @@
-# Midnight Template Repository
+# Midnight Wallet dApp
 
-This GitHub repository should be used as a template when creating a new Midnight GitHub repository.
-The template is configured with default repository settings and a set of default files that are expected to exist in all Midnight GitHub repositories.
+A minimal React + Vite app that connects to a Midnight wallet (Lace — Midnight edition via the DApp connector),
+builds the required MidnightJS providers from the wallet’s service URIs, and uses `@midnight-ntwrk/midnight-js-contracts`
+helpers to deploy a Compact contract, call `mintTest`, and transfer tokens to a wallet.
 
-### LICENSE
+## What you need
+- Midnight-enabled Lace wallet installed in your browser and unlocked.
+- Access to a Midnight test environment (the wallet exposes the Indexer, WS, Prover and Node URLs).
+- Your Compact contracts compiled to ESM modules (`.mjs`) so the app can `import()` them at runtime.
 
-Apache 2.0.
+## Run locally
+```bash
+yarn i   # or yarn / npm
+yarn dev
+```
+Open http://localhost:5173 and **Connect Lace (Midnight)**.
 
-### README.md
+## Notes / design
+- The app uses these MidnightJS providers:
+  - `levelPrivateStateProvider()` — IndexedDB-backed storage for private states and signing keys.
+  - `indexerPublicDataProvider(httpUrl, wsUrl)` — GraphQL Indexer client.
+  - `new FetchZkConfigProvider(nodeUrl)` — fetches ZK keys and zkIR from the node.
+  - `httpClientProofProvider(proverUrl)` — HTTP client to the proof server.
+  - A thin wallet adapter (via the DApp connector) to implement the `WalletProvider` and `MidnightProvider` interfaces.
+- The wallet DApp connector is expected at `window.midnight.lace` and must support `enable`, `getServiceURIs`, `balanceTransaction`, `submitTransaction`.
 
-Provides a brief description for users and developers who want to understand the purpose, setup, and usage of the repository.
+## Security
+- Keys never leave the wallet; proofs and submission are handled by the wallet + proof server.
+- This is a testnet-only starter. Review and harden before production.
 
-### SECURITY.md
+## Docker
 
-Provides a brief description of the Midnight Foundation's security policy and how to properly disclose security issues.
+```shell
+docker build -t midnight-lace-dapp .
+docker run -p 8080:8080 midnight-lace-dapp
+```
 
-### CONTRIBUTING.md
+OR
 
-Provides guidelines for how people can contribute to the Midnight project.
+```shell
+yarn dapp:docker
+```
 
-### CODEOWNERS
-
-Defines repository ownership rules.
-
-### ISSUE_TEMPLATE
-
-Provides templates for reporting various types of issues, such as: bug report, documentation improvement and feature request.
-
-### PULL_REQUEST_TEMPLATE
-
-Provides a template for a pull request.
-
-### CLA Assistant
-
-The Midnight Foundation appreciates contributions, and like many other open source projects asks contributors to sign a contributor
-License Agreement before accepting contributions. We use CLA assistant (https://github.com/cla-assistant/cla-assistant) to streamline the CLA
-signing process, enabling contributors to sign our CLAs directly within a GitHub pull request.
-
-### Dependabot
-
-The Midnight Foundation uses GitHub Dependabot feature to keep our projects dependencies up-to-date and address potential security vulnerabilities.
-
-### Checkmarx
-
-The Midnight Foundation uses Checkmarx for application security (AppSec) to identify and fix security vulnerabilities.
-All repositories are scanned with Checkmarx's suite of tools including: Static Application Security Testing (SAST), Infrastructure as Code (IaC), Software Composition Analysis (SCA), API Security, Container Security and Supply Chain Scans (SCS).
-
-### Unito
-
-Facilitates two-way data synchronization, automated workflows and streamline processes between: Jira, GitHub issues and Github project Kanban board.
-
-# TODO - New Repo Owner
-
-### Software Package Data Exchange (SPDX)
-Include the following Software Package Data Exchange (SPDX) short-form identifier in a comment at the top headers of each source code file.
-
-
- <I>// This file is part of <B>REPLACE WITH REPO-NAME</B>.<BR>
- // Copyright (C) 2025 Midnight Foundation<BR>
- // SPDX-License-Identifier: Apache-2.0<BR>
- // Licensed under the Apache License, Version 2.0 (the "License");<BR>
- // You may not use this file except in compliance with the License.<BR>
- // You may obtain a copy of the License at<BR>
- //<BR>
- //	https://www.apache.org/licenses/LICENSE-2.0<BR>
- //<BR>
- // Unless required by applicable law or agreed to in writing, software<BR>
- // distributed under the License is distributed on an "AS IS" BASIS,<BR>
- // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<BR>
- // See the License for the specific language governing permissions and<BR>
- // limitations under the License.</I>
+Access at: `http://localhost:8080`
