@@ -107,13 +107,13 @@ export function createWalletProvidersFromConnectedAPI(
         ) as Transaction<SignatureEnabled, Proof, Binding>;
         console.log('[WalletAdapter] balanceTx: Successfully deserialized transaction');
 
-        console.log('[WalletAdapter] balanceTx: Obtaining proving provider');
+        // console.log('[WalletAdapter] balanceTx: Obtaining proving provider');
         // const prover = await connectedAPI.getProvingProvider(
         //   zkConfigProvider.asKeyMaterialProvider()
         // );
         // console.log('[WalletAdapter] balanceTx: Obtained proving provider from connected API');
         // const proven = await deserializedTx.prove(prover, CostModel.initialCostModel());
-        console.log('[WalletAdapter] balanceTx: Successfully balanced and proved transaction');
+        // console.log('[WalletAdapter] balanceTx: Successfully balanced and proved transaction');
         return deserializedTx;
       } catch (error) {
         console.error('[WalletAdapter] balanceTx: Error during transaction balancing:', error);
