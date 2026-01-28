@@ -3657,17 +3657,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"effect@npm:^3.19.14":
-  version: 3.19.14
-  resolution: "effect@npm:3.19.14"
-  dependencies:
-    "@standard-schema/spec": "npm:^1.0.0"
-    fast-check: "npm:^3.23.1"
-  checksum: 10/b9dbcdf15a2f60da8f88fef79a893dcef45e88e35217f3ff207c302565fca37aaabc0f83f280adbd44096b2d18809d659193f7fce126d3e51342289220b8168e
-  languageName: node
-  linkType: hard
-
-"effect@npm:^3.19.15":
+"effect@npm:3.19.15":
   version: 3.19.15
   resolution: "effect@npm:3.19.15"
   dependencies:
@@ -5454,6 +5444,7 @@ __metadata:
   dependencies:
     "@apollo/client": "npm:^4.0.8"
     "@eslint/js": "npm:^9.18.0"
+    "@midnight-ntwrk/compact-js": "npm:2.4.0"
     "@midnight-ntwrk/compact-runtime": "npm:0.14.0"
     "@midnight-ntwrk/dapp-connector-api": "npm:4.0.0"
     "@midnight-ntwrk/ledger-v7": "npm:7.0.0"

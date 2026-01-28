@@ -136,9 +136,12 @@ export async function transferUnshieldedFromFaucet(
 
   const faucetFacade = new WalletFacade(faucetShielded, faucetUnshielded, faucetDust);
 
+  const shieldedSecretKeys = ledger.ZswapSecretKeys.fromSeed(faucetShieldedSeed);
+  const dustSecretKey  = ledger.DustSecretKey.fromSeed(faucetDustSeed);
+
   await faucetFacade.start(
-    ledger.ZswapSecretKeys.fromSeed(faucetShieldedSeed),
-    ledger.DustSecretKey.fromSeed(faucetDustSeed)
+    shieldedSecretKeys,
+    dustSecretKey
   );
 
   console.log('transferUnshieldedFromFaucet: waiting for sync...');
@@ -149,8 +152,6 @@ export async function transferUnshieldedFromFaucet(
   try {
     const ttl = new Date(Date.now() + 30 * 60 * 1000);
     const transfer = await faucetFacade.transferTransaction(
-      ledger.ZswapSecretKeys.fromSeed(faucetShieldedSeed),
-      ledger.DustSecretKey.fromSeed(faucetDustSeed),
       [
         {
           type: 'unshielded',
@@ -163,16 +164,17 @@ export async function transferUnshieldedFromFaucet(
           ],
         },
       ],
-      ttl
+      { shieldedSecretKeys, dustSecretKey },
+      { ttl }
     );
 
     console.log('transferUnshieldedFromFaucet: signing transaction...');
-    const signedTx = await faucetFacade.signTransaction(transfer.transaction, (payload) =>
+    const signedTx = await faucetFacade.signRecipe(transfer, (payload) =>
       faucetUnshieldedKeystore.signData(payload)
     );
 
     console.log('transferUnshieldedFromFaucet: finalizing transaction...');
-    const finalizedTx = await faucetFacade.finalizeTransaction(signedTx);
+    const finalizedTx = await faucetFacade.finalizeRecipe(signedTx);
 
     console.log('transferUnshieldedFromFaucet: submitting transaction...');
     return await faucetFacade.submitTransaction(finalizedTx);

@@ -12,14 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { CompiledContract } from '@midnight-ntwrk/compact-js';
 
-import * as CompiledContract from '../contract/index';
-import { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import * as CompiledOutput from '../contract/index';
+import { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import {ImpureCircuitId} from "@midnight-ntwrk/compact-js";
 
-export type DemoContract = CompiledContract.Contract<undefined>;
+export type DemoContract = CompiledOutput.Contract<undefined>;
 
 export type DemoCircuits = ImpureCircuitId<DemoContract>;
 
 export type DemoProviders = MidnightProviders<DemoCircuits>;
 
-export const createSimpleContractInstance = (): DemoContract => new CompiledContract.Contract({});
+export const createSimpleContractInstance = (): DemoContract => new CompiledOutput.Contract({});
+
+export const CompiledDemoContract =
+  CompiledContract.make<CompiledOutput.Contract>('UnshieldedDemo', CompiledOutput.Contract).pipe(
+    CompiledContract.withVacantWitnesses,
+    CompiledContract.withCompiledFileAssets('./contract/build/unshielded-demo')
+  );
