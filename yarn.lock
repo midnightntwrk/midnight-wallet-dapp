@@ -897,6 +897,65 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@midnight-ntwrk/midnight-wallet-dapp@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@midnight-ntwrk/midnight-wallet-dapp@workspace:."
+  dependencies:
+    "@apollo/client": "npm:^4.0.8"
+    "@eslint/js": "npm:^9.18.0"
+    "@midnight-ntwrk/compact-js": "npm:2.4.0"
+    "@midnight-ntwrk/compact-runtime": "npm:0.14.0"
+    "@midnight-ntwrk/dapp-connector-api": "npm:4.0.0"
+    "@midnight-ntwrk/ledger-v7": "npm:7.0.0"
+    "@midnight-ntwrk/midnight-js-compact": "npm:^3.0.0"
+    "@midnight-ntwrk/midnight-js-contracts": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-network-id": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-types": "npm:3.0.0"
+    "@midnight-ntwrk/midnight-js-utils": "npm:3.0.0"
+    "@midnight-ntwrk/wallet-sdk-facade": "npm:1.0.0"
+    "@playwright/test": "npm:^1.50.0"
+    "@types/lodash": "npm:^4"
+    "@types/react": "npm:^19.2.2"
+    "@types/react-dom": "npm:^19.2.2"
+    "@typescript-eslint/eslint-plugin": "npm:^8.22.0"
+    "@typescript-eslint/parser": "npm:^8.22.0"
+    "@vitejs/plugin-react": "npm:^5.1.0"
+    bech32: "npm:^2.0.0"
+    buffer: "npm:^6.0.3"
+    cross-fetch: "npm:^4.1.0"
+    crypto-browserify: "npm:^3.12.0"
+    eslint: "npm:^9.18.0"
+    eslint-config-prettier: "npm:^10.0.1"
+    eslint-plugin-react: "npm:^7.37.4"
+    eslint-plugin-react-hooks: "npm:^5.1.0"
+    fetch-retry: "npm:^6.0.0"
+    graphql: "npm:^16.11.0"
+    graphql-ws: "npm:^6.0.6"
+    husky: "npm:^9.1.7"
+    isomorphic-ws: "npm:^5.0.0"
+    level: "npm:^10.0.0"
+    lodash: "npm:^4.17.23"
+    prettier: "npm:^3.4.2"
+    process: "npm:^0.11.10"
+    react: "npm:^19.2.0"
+    react-dom: "npm:^19.2.0"
+    rxjs: "npm:^7.8.2"
+    stream-browserify: "npm:^3.0.0"
+    superjson: "npm:^2.2.5"
+    typescript: "npm:^5.9.3"
+    util: "npm:^0.12.5"
+    vite: "npm:^7.1.12"
+    vite-plugin-static-copy: "npm:^3.1.4"
+    vite-plugin-top-level-await: "npm:^1.6.0"
+    vite-plugin-wasm: "npm:^3.5.0"
+    ws: "npm:^8.14.2"
+  languageName: unknown
+  linkType: soft
+
 "@midnight-ntwrk/onchain-runtime-v2@npm:^2.0.0":
   version: 2.0.0
   resolution: "@midnight-ntwrk/onchain-runtime-v2@npm:2.0.0::__archiveUrl=https%3A%2F%2Fnpm.pkg.github.com%2Fdownload%2F%40midnight-ntwrk%2Fonchain-runtime-v2%2F2.0.0%2F52b1b4c48af577d31a5ba21947d00b4832aeb5cf"
@@ -5353,6 +5412,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash@npm:^4.17.23":
+  version: 4.17.23
+  resolution: "lodash@npm:4.17.23"
+  checksum: 10/82504c88250f58da7a5a4289f57a4f759c44946c005dd232821c7688b5fcfbf4a6268f6a6cdde4b792c91edd2f3b5398c1d2a0998274432cff76def48735e233
+  languageName: node
+  linkType: hard
+
 "long@npm:^5.0.0":
   version: 5.3.2
   resolution: "long@npm:5.3.2"
@@ -5437,65 +5503,6 @@ __metadata:
   checksum: 10/098494d885684bcc4f92294b18ba61b7bd353c23147fbc4688c75b45cb8590f5a95fd4584d742415dcc52487f7a1ef6ea611cfa1543b0dc4492fe026357f3f0c
   languageName: node
   linkType: hard
-
-"midnight-lace-dapp@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "midnight-lace-dapp@workspace:."
-  dependencies:
-    "@apollo/client": "npm:^4.0.8"
-    "@eslint/js": "npm:^9.18.0"
-    "@midnight-ntwrk/compact-js": "npm:2.4.0"
-    "@midnight-ntwrk/compact-runtime": "npm:0.14.0"
-    "@midnight-ntwrk/dapp-connector-api": "npm:4.0.0"
-    "@midnight-ntwrk/ledger-v7": "npm:7.0.0"
-    "@midnight-ntwrk/midnight-js-compact": "npm:^3.0.0"
-    "@midnight-ntwrk/midnight-js-contracts": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-network-id": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-types": "npm:3.0.0"
-    "@midnight-ntwrk/midnight-js-utils": "npm:3.0.0"
-    "@midnight-ntwrk/wallet-sdk-facade": "npm:1.0.0"
-    "@playwright/test": "npm:^1.50.0"
-    "@types/lodash": "npm:^4"
-    "@types/react": "npm:^19.2.2"
-    "@types/react-dom": "npm:^19.2.2"
-    "@typescript-eslint/eslint-plugin": "npm:^8.22.0"
-    "@typescript-eslint/parser": "npm:^8.22.0"
-    "@vitejs/plugin-react": "npm:^5.1.0"
-    bech32: "npm:^2.0.0"
-    buffer: "npm:^6.0.3"
-    cross-fetch: "npm:^4.1.0"
-    crypto-browserify: "npm:^3.12.0"
-    eslint: "npm:^9.18.0"
-    eslint-config-prettier: "npm:^10.0.1"
-    eslint-plugin-react: "npm:^7.37.4"
-    eslint-plugin-react-hooks: "npm:^5.1.0"
-    fetch-retry: "npm:^6.0.0"
-    graphql: "npm:^16.11.0"
-    graphql-ws: "npm:^6.0.6"
-    husky: "npm:^9.1.7"
-    isomorphic-ws: "npm:^5.0.0"
-    level: "npm:^10.0.0"
-    lodash: "npm:^4.17.21"
-    prettier: "npm:^3.4.2"
-    process: "npm:^0.11.10"
-    react: "npm:^19.2.0"
-    react-dom: "npm:^19.2.0"
-    rxjs: "npm:^7.8.2"
-    stream-browserify: "npm:^3.0.0"
-    superjson: "npm:^2.2.5"
-    typescript: "npm:^5.9.3"
-    util: "npm:^0.12.5"
-    vite: "npm:^7.1.12"
-    vite-plugin-static-copy: "npm:^3.1.4"
-    vite-plugin-top-level-await: "npm:^1.6.0"
-    vite-plugin-wasm: "npm:^3.5.0"
-    ws: "npm:^8.14.2"
-  languageName: unknown
-  linkType: soft
 
 "miller-rabin@npm:^4.0.0":
   version: 4.0.1
