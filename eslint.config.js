@@ -139,7 +139,7 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'src/contract/build/'],
+    ignores: ['dist/', 'node_modules/', 'src/contract/build/', '.vite/', 'coverage/'],
   },
   prettier,
 ];

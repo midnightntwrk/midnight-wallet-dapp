@@ -23,6 +23,7 @@ import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { InitialAPI, ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import './styles.css';
 import {
+  CompiledDemoContract,
   createSimpleContractInstance,
   DemoCircuits,
   DemoContract,
@@ -82,6 +83,7 @@ export default function App() {
   const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('25');
   const [mintedColor, setMintedColor] = useState<string>('');
   const [txLog, setTxLog] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const appendLog = (msg: string) =>
     setTxLog((prev) => [new Date().toLocaleTimeString() + ': ' + msg, ...prev]);
 
@@ -192,6 +194,7 @@ export default function App() {
   async function onRequestDustFromFaucet() {
     if (!connectedAPI || !providers) return alert('Connect wallet first');
 
+    setIsLoading(true);
     try {
       appendLog('Requesting tokens from faucet...');
 
@@ -223,68 +226,101 @@ export default function App() {
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error transferring from faucet: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function onDeploy() {
     if (!providers) return alert('Connect wallet first');
-    const demoContractInstance: DemoContract = createSimpleContractInstance();
-    const deployed = await deployContract(providers, { contract: demoContractInstance });
-    setDeployed(deployed);
-    setContractInstance(demoContractInstance);
-    appendLog('Deployed Mint Contract at ' + deployed.deployTxData.public.contractAddress);
+
+    setIsLoading(true);
+    try {
+      const demoContractInstance: DemoContract = createSimpleContractInstance();
+      const deployed = await deployContract(providers, { compiledContract: CompiledDemoContract });
+      setDeployed(deployed);
+      setContractInstance(demoContractInstance);
+      appendLog('Deployed Mint Contract at ' + deployed.deployTxData.public.contractAddress);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error deploying contract: ' + getErrorMessage(e));
+      alert('Failed to deploy contract: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function onMint() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
-    const callTxOptions = {
-      contract: contractInstance,
-      contractAddress: deployed.deployTxData.public.contractAddress,
-      circuitId: 'mintAndReceive' as DemoCircuits,
-      args: [BigInt(mintAmount)] as [bigint],
-    } as const;
-    const callTxData = await submitCallTx(providers!, callTxOptions);
-    const colorBytes32 = callTxData.private.result as Uint8Array;
-    const hex = Array.from(colorBytes32)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    setMintedColor('0x' + hex);
-    appendLog(`Minted ${mintAmount} tokens with color 0x${hex}`);
+
+    setIsLoading(true);
+    try {
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'mintAndReceive' as DemoCircuits,
+        args: [BigInt(mintAmount)] as [bigint],
+      } as const;
+      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const colorBytes32 = callTxData.private.result as Uint8Array;
+      const hex = Array.from(colorBytes32)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      setMintedColor('0x' + hex);
+      appendLog(`Minted ${mintAmount} tokens with color 0x${hex}`);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error minting tokens: ' + getErrorMessage(e));
+      alert('Failed to mint tokens: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function onClaim() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
-    const address = await connectedAPI?.getUnshieldedAddress();
 
-    if (!address?.unshieldedAddress) {
-      return alert('No unshielded address available');
+    setIsLoading(true);
+    try {
+      const address = await connectedAPI?.getUnshieldedAddress();
+
+      if (!address?.unshieldedAddress) {
+        return alert('No unshielded address available');
+      }
+
+      appendLog(`Unshielded address: ${address.unshieldedAddress}`);
+
+      // Decode bech32m address to get raw bytes
+      const decoded = bech32m.decode(address.unshieldedAddress, 1000);
+      const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
+
+      appendLog(`Decoded address bytes (${addressBytes.length} bytes)`);
+
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'sendToUser' as DemoCircuits,
+        args: [BigInt(claimAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
+      };
+
+      await submitCallTx(providers!, callTxOptions);
+      appendLog(`Claimed ${claimAmount} tokens to address ${address.unshieldedAddress}`);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error claiming tokens: ' + getErrorMessage(e));
+      alert('Failed to claim tokens: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
     }
-
-    appendLog(`Unshielded address: ${address.unshieldedAddress}`);
-
-    // Decode bech32m address to get raw bytes
-    const decoded = bech32m.decode(address.unshieldedAddress, 1000);
-    const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
-
-    appendLog(`Decoded address bytes (${addressBytes.length} bytes)`);
-
-    const callTxOptions = {
-      contract: contractInstance,
-      contractAddress: deployed.deployTxData.public.contractAddress,
-      circuitId: 'sendToUser' as DemoCircuits,
-      args: [BigInt(claimAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
-    };
-
-    await submitCallTx(providers!, callTxOptions);
-    appendLog(`Claimed ${claimAmount} tokens to address ${address.unshieldedAddress}`);
   }
 
   async function onReceiveTokens() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
 
+    setIsLoading(true);
     try {
       const callTxOptions = {
-        contract: contractInstance,
+        compiledContract: CompiledDemoContract,
         contractAddress: deployed.deployTxData.public.contractAddress,
         circuitId: 'receiveTokens' as DemoCircuits,
         args: [BigInt(receiveAmount)] as [bigint],
@@ -297,15 +333,18 @@ export default function App() {
       console.error(e);
       appendLog('Error receiving tokens: ' + errorMessage);
       alert('Failed to receive tokens: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function onDepositNight() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
 
+    setIsLoading(true);
     try {
       const callTxOptions = {
-        contract: contractInstance,
+        compiledContract: CompiledDemoContract,
         contractAddress: deployed.deployTxData.public.contractAddress,
         circuitId: 'receiveNightTokens' as DemoCircuits,
         args: [BigInt(depositNightAmount)] as [bigint],
@@ -318,12 +357,15 @@ export default function App() {
       console.error(e);
       appendLog('Error depositing NIGHT tokens: ' + errorMessage);
       alert('Failed to deposit NIGHT tokens: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function onWithdrawNight() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
 
+    setIsLoading(true);
     try {
       const address = await connectedAPI?.getUnshieldedAddress();
 
@@ -337,7 +379,7 @@ export default function App() {
       const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
 
       const callTxOptions = {
-        contract: contractInstance,
+        compiledContract: CompiledDemoContract,
         contractAddress: deployed.deployTxData.public.contractAddress,
         circuitId: 'sendNightTokensToUser' as DemoCircuits,
         args: [BigInt(withdrawNightAmount), { bytes: addressBytes }] as [
@@ -353,6 +395,8 @@ export default function App() {
       console.error(e);
       appendLog('Error withdrawing NIGHT tokens: ' + errorMessage);
       alert('Failed to withdraw NIGHT tokens: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -414,8 +458,12 @@ export default function App() {
             ) : (
               <>
                 {networkId === 'undeployed' && (
-                  <button onClick={onRequestDustFromFaucet} className="btn btn-accent">
-                    Get Tokens from Faucet
+                  <button
+                    onClick={onRequestDustFromFaucet}
+                    disabled={isLoading}
+                    className="btn btn-accent"
+                  >
+                    {isLoading ? 'Processing...' : 'Get Tokens from Faucet'}
                   </button>
                 )}
                 {networkId === 'preview' && (
@@ -461,8 +509,12 @@ export default function App() {
             </div>
           </div>
           <div className="wallet-actions">
-            <button onClick={onDeploy} disabled={!providers} className="btn btn-primary">
-              Deploy Contract
+            <button
+              onClick={onDeploy}
+              disabled={!providers || isLoading}
+              className="btn btn-primary"
+            >
+              {isLoading ? 'Processing...' : 'Deploy Contract'}
             </button>
           </div>
         </section>
@@ -486,10 +538,10 @@ export default function App() {
               </div>
               <button
                 onClick={onMint}
-                disabled={!deployed || !providers}
+                disabled={!deployed || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                Mint Tokens
+                {isLoading ? 'Processing...' : 'Mint Tokens'}
               </button>
               <div className="info-box">
                 <span className="info-label">Minted Color:</span>
@@ -511,10 +563,10 @@ export default function App() {
               </div>
               <button
                 onClick={onClaim}
-                disabled={!deployed || !mintedColor || !providers}
+                disabled={!deployed || !mintedColor || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                Claim Tokens
+                {isLoading ? 'Processing...' : 'Claim Tokens'}
               </button>
 
               <div className="divider"></div>
@@ -532,10 +584,10 @@ export default function App() {
               </div>
               <button
                 onClick={onReceiveTokens}
-                disabled={!deployed || !providers}
+                disabled={!deployed || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                Deposit Tokens
+                {isLoading ? 'Processing...' : 'Deposit Tokens'}
               </button>
             </div>
           </div>
@@ -558,10 +610,10 @@ export default function App() {
               </div>
               <button
                 onClick={onDepositNight}
-                disabled={!deployed || !providers}
+                disabled={!deployed || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                Deposit NIGHT
+                {isLoading ? 'Processing...' : 'Deposit NIGHT'}
               </button>
 
               <div className="divider"></div>
@@ -579,10 +631,10 @@ export default function App() {
               </div>
               <button
                 onClick={onWithdrawNight}
-                disabled={!deployed || !providers}
+                disabled={!deployed || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                Withdraw NIGHT
+                {isLoading ? 'Processing...' : 'Withdraw NIGHT'}
               </button>
             </div>
           </div>
