@@ -20,12 +20,11 @@ import {
   type ZKConfigProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import {
+  Binding,
   CoinPublicKey,
-  CostModel,
   EncPublicKey,
   FinalizedTransaction,
-  PreBinding,
-  PreProof,
+  Proof,
   SignatureEnabled,
 } from '@midnight-ntwrk/ledger-v7';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
@@ -70,7 +69,7 @@ export function createWalletProvidersFromConnectedAPI(
         console.log('[WalletAdapter] balanceTx: Starting transaction balancing');
 
         console.log('[WalletAdapter] balanceTx: Serializing unsealed transaction');
-        const serialized = tx.bind().serialize();
+        const serialized = tx.serialize();
         console.log('[WalletAdapter] balanceTx: Serialized transaction length:', serialized.length);
 
         const serializedStr = uint8ArrayToHex(serialized);
@@ -86,7 +85,10 @@ export function createWalletProvidersFromConnectedAPI(
         console.log(`[WalletAdapter] balanceTx: toString: ${tx.toString()}]`);
 
         console.log('[WalletAdapter] balanceTx: Balancing with wallet');
-        const result = await connectedAPI.balanceSealedTransaction(serializedStr);
+        const result = await connectedAPI.balanceUnsealedTransaction(serializedStr);
+
+        console.log(`[WalletAdapter] balanceTx: toString: ${result.toString()}]`);
+
         console.log(
           '[WalletAdapter] balanceTx: Received response from wallet, tx string length:',
           result.tx.length
@@ -102,20 +104,13 @@ export function createWalletProvidersFromConnectedAPI(
         console.log('[WalletAdapter] balanceTx: Deserializing transaction');
         const deserializedTx = Transaction.deserialize(
           'signature',
-          'pre-proof',
-          'pre-binding',
+          'proof',
+          'binding',
           resultBytes
-        ) as Transaction<SignatureEnabled, PreProof, PreBinding>;
+        ) as Transaction<SignatureEnabled, Proof, Binding>;
         console.log('[WalletAdapter] balanceTx: Successfully deserialized transaction');
 
-        console.log('[WalletAdapter] balanceTx: Obtaining proving provider');
-        const prover = await connectedAPI.getProvingProvider(
-          zkConfigProvider.asKeyMaterialProvider()
-        );
-        console.log('[WalletAdapter] balanceTx: Obtained proving provider from connected API');
-        const proven = await deserializedTx.prove(prover, CostModel.initialCostModel());
-        console.log('[WalletAdapter] balanceTx: Successfully balanced and proved transaction');
-        return proven.bind();
+        return deserializedTx;
       } catch (error) {
         console.error('[WalletAdapter] balanceTx: Error during transaction balancing:', error);
         throw error;
