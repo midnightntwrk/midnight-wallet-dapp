@@ -34,8 +34,24 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(yarn info @playwright/test --json | jq -r '.children.Version')" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: yarn playwright install --with-deps chromium
+
+      - name: Install Playwright dependencies (OS packages)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: yarn playwright install-deps chromium
 
       - name: Run e2e smoke test
         run: yarn test:e2e
