@@ -14,10 +14,61 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { injectMockWalletScript } from './mocks/mockWallet';
 
-test('app loads and displays title', async ({ page }) => {
-  await page.goto('/');
+test.describe('App Load', () => {
+  test('displays title and header', async ({ page }) => {
+    await page.goto('/');
 
-  await expect(page).toHaveTitle(/Midnight/i);
-  await expect(page.locator('h1')).toBeVisible();
+    await expect(page).toHaveTitle(/Midnight/i);
+    await expect(page.locator('h1')).toBeVisible();
+  });
+});
+
+test.describe('Wallet Connection', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(injectMockWalletScript());
+  });
+
+  test('detects mock wallet', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('.status-badge')).toContainText('Wallet Detected');
+    await expect(page.locator('.activity-log')).toContainText('Found 1 wallet API(s): Mock Wallet');
+  });
+
+  test('connects to wallet successfully', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('.status-badge')).toContainText('Wallet Detected');
+
+    await page.click('button:has-text("Connect Wallet")');
+
+    await expect(page.locator('.status-badge')).toHaveAttribute('data-connected', 'true');
+    await expect(page.locator('.status-badge')).toContainText('Connected');
+    await expect(page.locator('.activity-log')).toContainText('Wallet connected successfully');
+    await expect(page.locator('.activity-log')).toContainText('Providers initialized');
+  });
+
+  test('displays wallet info after connection', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('button:has-text("Connect Wallet")');
+
+    const walletInfo = page.locator('.wallet-section').first().locator('.network-info');
+    await expect(walletInfo).toContainText('Network:');
+    await expect(walletInfo).toContainText('Wallet: Mock Wallet');
+  });
+
+  test('can disconnect wallet', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('button:has-text("Connect Wallet")');
+    await expect(page.locator('.status-badge')).toContainText('Connected');
+
+    await page.click('button:has-text("Disconnect")');
+
+    await expect(page.locator('.status-badge')).toContainText('Wallet Detected');
+    await expect(page.locator('.activity-log')).toContainText('Disconnected');
+  });
 });
