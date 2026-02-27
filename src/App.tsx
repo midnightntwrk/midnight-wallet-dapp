@@ -423,6 +423,7 @@ export default function App() {
                   <option value="undeployed">Undeployed</option>
                   <option value="preview">Preview</option>
                   <option value="qanet">QANet</option>
+                  <option value="badNetwork">Bad Network</option>
                 </select>
                 <button onClick={onConnectWallet} disabled={availableAPIs.length === 0} className="btn btn-primary">
                   {availableAPIs.length > 0 ? 'Connect Wallet' : 'No Wallet Detected'}
