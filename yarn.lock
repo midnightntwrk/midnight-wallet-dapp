@@ -783,10 +783,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/ledger-v7@npm:7.0.2":
-  version: 7.0.2
-  resolution: "@midnight-ntwrk/ledger-v7@npm:7.0.2::__archiveUrl=https%3A%2F%2Fnpm.pkg.github.com%2Fdownload%2F%40midnight-ntwrk%2Fledger-v7%2F7.0.2%2Fd8903b69451424b0b00483a27cb0be696e343565"
-  checksum: 10/2afb66d482a145eebb9a765c1d4dc0971e038befa130d6b129381f86137129f149a67e38a3732b79d94664dd8513c9512a9d3f0a2ea3a9f00495321b86dde4d5
+"@midnight-ntwrk/ledger-v7@npm:7.0.0":
+  version: 7.0.0
+  resolution: "@midnight-ntwrk/ledger-v7@npm:7.0.0::__archiveUrl=https%3A%2F%2Fnpm.pkg.github.com%2Fdownload%2F%40midnight-ntwrk%2Fledger-v7%2F7.0.0%2F466eab1ed18f3272b511e5ee66a2e8431c4b41be"
+  checksum: 10/cd04c6cdfb2e15192c10c3beb4a3b65f5c6419eedb0f52f65d67cb50ae6ecb492a1fa96e76479f2db2796d89512d4290cf26de4424e47378c90c743529ddb82a
   languageName: node
   linkType: hard
 
@@ -909,7 +909,7 @@ __metadata:
     "@midnight-ntwrk/compact-js": "npm:2.4.0"
     "@midnight-ntwrk/compact-runtime": "npm:0.14.0"
     "@midnight-ntwrk/dapp-connector-api": "npm:4.0.1"
-    "@midnight-ntwrk/ledger-v7": "npm:7.0.2"
+    "@midnight-ntwrk/ledger-v7": "npm:7.0.0"
     "@midnight-ntwrk/midnight-js-compact": "npm:^3.2.0-rc.1"
     "@midnight-ntwrk/midnight-js-contracts": "npm:3.2.0-rc.1"
     "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:3.2.0-rc.1"

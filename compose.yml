@@ -1,7 +1,7 @@
 # WARNING: Insecure default credentials below. For local development only — do not use in production.
 services:
   proof-server:
-    image: 'ghcr.io/midnight-ntwrk/proof-server:7.0.2'
+    image: 'ghcr.io/midnight-ntwrk/proof-server:7.0.0'
     container_name: proof-server_$TESTCONTAINERS_UID
     command: ['midnight-proof-server']
     ports:
