@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) 2025-2026 Midnight Foundation
+ * Copyright (C) 2025 Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -49,7 +49,11 @@ export async function buildProvidersFromConnectedAPI(
     shieldedAddress,
     unshieldedAddress.unshieldedAddress
   );
-  const privateStateProvider = levelPrivateStateProvider({ walletProvider });
+  // For demo purposes only, we use a simple password provider that returns a fixed password.
+  const privateStateProvider = levelPrivateStateProvider({
+    privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',
+    accountId: shieldedAddress.shieldedAddress,
+  });
 
   return {
     privateStateProvider,
