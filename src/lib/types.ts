@@ -26,9 +26,9 @@ export type DemoProviders = MidnightProviders<DemoCircuits>;
 
 export const createSimpleContractInstance = (): DemoContract => new CompiledOutput.Contract({});
 
-export const CompiledDemoContract = CompiledContract.make<CompiledOutput.Contract>(
+export const CompiledDemoContract = CompiledContract.make<DemoContract>(
   'UnshieldedDemo',
-  CompiledOutput.Contract
+  CompiledOutput.Contract<undefined>
 ).pipe(
   CompiledContract.withVacantWitnesses,
   CompiledContract.withCompiledFileAssets('./contract/build/unshielded-demo')

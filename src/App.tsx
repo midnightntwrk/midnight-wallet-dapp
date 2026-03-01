@@ -64,7 +64,7 @@ export default function App() {
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
 
-  const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(null);
+  const [deployed, setDeployed] = useState<DeployedContract<DemoContract> | null>(null);
   const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
 
   const [mintAmount, setMintAmount] = useState<string>('1000');
@@ -221,7 +221,7 @@ export default function App() {
     setIsLoading(true);
     try {
       const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployed = await deployContract(providers, { compiledContract: CompiledDemoContract });
+      const deployed = await deployContract<DemoContract>(providers, { compiledContract: CompiledDemoContract });
       setDeployed(deployed);
       setContractInstance(demoContractInstance);
       appendLog('Deployed Mint Contract at ' + deployed.deployTxData.public.contractAddress);
