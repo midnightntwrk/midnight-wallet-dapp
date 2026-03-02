@@ -3,7 +3,7 @@ services:
   proof-server:
     image: 'ghcr.io/midnight-ntwrk/proof-server:7.0.0'
     container_name: proof-server_$TESTCONTAINERS_UID
-    command: ['midnight-proof-server -v']
+    command: ['midnight-proof-server']
     ports:
       - '6300:6300'
     environment:
@@ -16,7 +16,7 @@ services:
       start_period: 10s
 
   indexer:
-    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:3.0.0'
+    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:3.1.0'
     container_name: indexer_$TESTCONTAINERS_UID
     ports:
       - '8088:8088'
@@ -40,7 +40,7 @@ services:
         condition: service_healthy
 
   node:
-    image: 'ghcr.io/midnight-ntwrk/midnight-node:0.20.0'
+    image: 'ghcr.io/midnight-ntwrk/midnight-node:0.21.0'
     container_name: node_$TESTCONTAINERS_UID
     ports:
       - '9944:9944'
