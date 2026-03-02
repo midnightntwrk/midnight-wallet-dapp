@@ -139,21 +139,21 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('sendToUser',
                                      'argument 1 (as invoked from Typescript)',
-                                     'unshielded-demo.compact line 23 char 1',
+                                     'unshielded-demo.compact line 21 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(amount_0) === 'bigint' && amount_0 >= 0n && amount_0 <= 18446744073709551615n)) {
           __compactRuntime.typeError('sendToUser',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 23 char 1',
+                                     'unshielded-demo.compact line 21 char 1',
                                      'Uint<0..18446744073709551616>',
                                      amount_0)
         }
         if (!(typeof(user_addr_0) === 'object' && user_addr_0.bytes.buffer instanceof ArrayBuffer && user_addr_0.bytes.BYTES_PER_ELEMENT === 1 && user_addr_0.bytes.length === 32)) {
           __compactRuntime.typeError('sendToUser',
                                      'argument 2 (argument 3 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 23 char 1',
+                                     'unshielded-demo.compact line 21 char 1',
                                      'struct UserAddress<bytes: Bytes<32>>',
                                      user_addr_0)
         }
@@ -183,14 +183,14 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('receiveTokens',
                                      'argument 1 (as invoked from Typescript)',
-                                     'unshielded-demo.compact line 34 char 1',
+                                     'unshielded-demo.compact line 32 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(amount_0) === 'bigint' && amount_0 >= 0n && amount_0 <= 340282366920938463463374607431768211455n)) {
           __compactRuntime.typeError('receiveTokens',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 34 char 1',
+                                     'unshielded-demo.compact line 32 char 1',
                                      'Uint<0..340282366920938463463374607431768211456>',
                                      amount_0)
         }
@@ -219,14 +219,14 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('receiveNightTokens',
                                      'argument 1 (as invoked from Typescript)',
-                                     'unshielded-demo.compact line 40 char 1',
+                                     'unshielded-demo.compact line 38 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(amount_0) === 'bigint' && amount_0 >= 0n && amount_0 <= 340282366920938463463374607431768211455n)) {
           __compactRuntime.typeError('receiveNightTokens',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 40 char 1',
+                                     'unshielded-demo.compact line 38 char 1',
                                      'Uint<0..340282366920938463463374607431768211456>',
                                      amount_0)
         }
@@ -256,21 +256,21 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('sendNightTokensToUser',
                                      'argument 1 (as invoked from Typescript)',
-                                     'unshielded-demo.compact line 44 char 1',
+                                     'unshielded-demo.compact line 42 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(amount_0) === 'bigint' && amount_0 >= 0n && amount_0 <= 18446744073709551615n)) {
           __compactRuntime.typeError('sendNightTokensToUser',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 44 char 1',
+                                     'unshielded-demo.compact line 42 char 1',
                                      'Uint<0..18446744073709551616>',
                                      amount_0)
         }
         if (!(typeof(user_addr_0) === 'object' && user_addr_0.bytes.buffer instanceof ArrayBuffer && user_addr_0.bytes.BYTES_PER_ELEMENT === 1 && user_addr_0.bytes.length === 32)) {
           __compactRuntime.typeError('sendNightTokensToUser',
                                      'argument 2 (argument 3 as invoked from Typescript)',
-                                     'unshielded-demo.compact line 44 char 1',
+                                     'unshielded-demo.compact line 42 char 1',
                                      'struct UserAddress<bytes: Bytes<32>>',
                                      user_addr_0)
         }
@@ -660,7 +660,6 @@ export class Contract {
                                                                                                                                                    alignment: _descriptor_9.alignment() } }] } },
                                                                                                                         { popeq: { cached: true,
                                                                                                                                    result: undefined } }]).value)));
-    this._receiveUnshielded_0(context, partialProofData, color_0, amount_0);
     return color_0;
   }
   _sendToUser_0(context, partialProofData, amount_0, user_addr_0) {

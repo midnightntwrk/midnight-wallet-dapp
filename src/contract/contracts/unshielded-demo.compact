@@ -12,8 +12,6 @@ export circuit mintAndReceive(amount: Uint<64>): Bytes<32> {
         left<ContractAddress, UserAddress>(kernel.self())
     );
 
-    receiveUnshielded(color, disclose(amount) as Uint<128>);
-
     return color;
 }
 
