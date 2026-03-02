@@ -1,8 +1,12 @@
 {
+  "compiler-version": "0.29.0",
+  "language-version": "0.21.0",
+  "runtime-version": "0.14.0",
   "circuits": [
     {
       "name": "mintAndReceive",
       "pure": false,
+      "proof": true,
       "arguments": [
         {
           "name": "amount",
@@ -20,6 +24,7 @@
     {
       "name": "sendToUser",
       "pure": false,
+      "proof": true,
       "arguments": [
         {
           "name": "amount",
@@ -54,6 +59,7 @@
     {
       "name": "receiveTokens",
       "pure": false,
+      "proof": true,
       "arguments": [
         {
           "name": "amount",
@@ -72,6 +78,7 @@
     {
       "name": "receiveNightTokens",
       "pure": false,
+      "proof": true,
       "arguments": [
         {
           "name": "amount",
@@ -90,6 +97,7 @@
     {
       "name": "sendNightTokensToUser",
       "pure": false,
+      "proof": true,
       "arguments": [
         {
           "name": "amount",

@@ -49,8 +49,11 @@ export async function buildProvidersFromConnectedAPI(
     shieldedAddress,
     unshieldedAddress.unshieldedAddress
   );
-  const privateStateProvider = levelPrivateStateProvider({ walletProvider });
-
+  // For demo purposes only, we use a simple password provider that returns a fixed password.
+  const privateStateProvider = levelPrivateStateProvider({
+    privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',
+    accountId: shieldedAddress.shieldedAddress,
+  });
   return {
     privateStateProvider,
     publicDataProvider,
