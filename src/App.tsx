@@ -16,50 +16,24 @@
 import React, { useEffect, useState } from 'react';
 import { deployContract, type DeployedContract, submitCallTx } from '@midnight-ntwrk/midnight-js-contracts';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
-import type { InitialAPI, ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
-import './styles.css';
-import {
-  CompiledDemoContract,
-  createSimpleContractInstance,
-  DemoCircuits,
-  DemoContract,
-  DemoProviders,
-} from './lib/types';
-import { transferUnshieldedFromFaucet } from './lib/faucet';
-import { bech32m } from 'bech32';
+import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { bech32m } from 'bech32';
+
+import { useActivityLog } from './hooks/useActivityLog';
+import { useWalletDetection } from './hooks/useWalletDetection';
+import { getErrorMessage } from './utils/errors';
+
+import { CompiledDemoContract, createSimpleContractInstance, DemoCircuits, DemoContract, DemoProviders } from './lib/types';
+import { transferUnshieldedFromFaucet } from './lib/faucet';
 import * as CompiledContract from './contract/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MidnightWindow = Window & { midnight?: Record<string, any>; cardano?: unknown };
-
-function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
-
-function findInitialAPIs(): InitialAPI[] {
-  const midnight = (window as MidnightWindow).midnight;
-  if (!midnight) return [];
-
-  const apis: InitialAPI[] = [];
-  for (const key of Object.keys(midnight)) {
-    const candidate = midnight[key];
-    if (
-      candidate &&
-      typeof candidate === 'object' &&
-      typeof candidate.name === 'string' &&
-      typeof candidate.icon === 'string' &&
-      typeof candidate.apiVersion === 'string' &&
-      typeof candidate.connect === 'function'
-    ) {
-      apis.push(candidate as InitialAPI);
-    }
-  }
-  return apis;
-}
+import './styles.css';
 
 export default function App() {
-  const [availableAPIs, setAvailableAPIs] = useState<InitialAPI[]>([]);
+  const { logs, appendLog } = useActivityLog();
+  const { availableAPIs } = useWalletDetection(appendLog);
+
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
@@ -73,40 +47,15 @@ export default function App() {
   const [depositNightAmount, setDepositNightAmount] = useState<string>('50');
   const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('25');
   const [mintedColor, setMintedColor] = useState<string>('');
-  const [txLog, setTxLog] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const appendLog = (msg: string) => setTxLog((prev) => [new Date().toLocaleTimeString() + ': ' + msg, ...prev]);
 
-  // Important: MidnightJS has a *global* network-id that must match the wallet/network.
-  // If this is left at the default (often `undeployed`), transactions can be built for the
-  // wrong network and Lace will fail when balancing/submitting.
   useEffect(() => {
     try {
       setGlobalNetworkId(networkId as NetworkId);
     } catch {
-      // Ignore invalid values; the user may be mid-selection or running against older libs.
+      // Ignore invalid values
     }
   }, [networkId]);
-
-  useEffect(() => {
-    const w = window as MidnightWindow;
-    appendLog('window.cardano=' + (typeof w.cardano !== 'undefined'));
-    appendLog('window.midnight=' + (typeof w.midnight !== 'undefined'));
-
-    let tries = 0;
-    const iv = setInterval(() => {
-      const apis = findInitialAPIs();
-      if (apis.length > 0) {
-        clearInterval(iv);
-        setAvailableAPIs(apis);
-        appendLog(`Found ${apis.length} wallet API(s): ${apis.map((a) => a.name).join(', ')}`);
-      } else if (++tries > 40) {
-        clearInterval(iv);
-        appendLog('No Midnight wallet detected after polling');
-      }
-    }, 500);
-    return () => clearInterval(iv);
-  }, []);
 
   async function onConnectWallet() {
     if (availableAPIs.length === 0) {
@@ -118,8 +67,6 @@ export default function App() {
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
-      // Ensure MidnightJS global network id matches what we're asking the wallet for.
-      // (Some SDK components use this global when serializing transactions.)
       try {
         setGlobalNetworkId(networkId as NetworkId);
       } catch {
@@ -131,23 +78,19 @@ export default function App() {
       appendLog('Wallet connected successfully');
 
       const config = await connected.getConfiguration();
-      // Prefer the network id returned by the wallet config (source of truth)
-      // and keep MidnightJS global network id aligned.
       try {
         setNetworkIdState(config.networkId);
         setGlobalNetworkId(config.networkId as NetworkId);
       } catch {
-        // Fall back to UI state if the wallet returns an unexpected value.
+        // Fall back to UI state
       }
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
 
       const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'unshielded-demo');
-
       setProviders(demoCircuitsMidnightProviders);
       appendLog('Providers initialized for Mint Contract');
 
-      // Get and log wallet balances
       try {
         const shieldedBalances = await connected.getShieldedBalances();
         const unshieldedBalances = await connected.getUnshieldedBalances();
@@ -200,10 +143,8 @@ export default function App() {
       appendLog(`Transfer successful! TX Hash: ${txHash}`);
       appendLog('Waiting for transaction to be processed...');
 
-      // Wait for indexer to process
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      // Refresh dust balance (dust is generated from Night balance)
       const dust = await connectedAPI.getDustBalance();
       appendLog(`Updated Dust Balance: ${dust.balance.toString()} / ${dust.cap.toString()}`);
       appendLog('Faucet transfer complete! You now have Night tokens and dust.');
@@ -221,10 +162,10 @@ export default function App() {
     setIsLoading(true);
     try {
       const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployed = await deployContract(providers, { compiledContract: CompiledDemoContract });
-      setDeployed(deployed);
+      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
+      setDeployed(deployedContract);
       setContractInstance(demoContractInstance);
-      appendLog('Deployed Mint Contract at ' + deployed.deployTxData.public.contractAddress);
+      appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error deploying contract: ' + getErrorMessage(e));
@@ -274,7 +215,6 @@ export default function App() {
 
       appendLog(`Unshielded address: ${address.unshieldedAddress}`);
 
-      // Decode bech32m address to get raw bytes
       const decoded = bech32m.decode(address.unshieldedAddress, 1000);
       const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
 
@@ -313,10 +253,9 @@ export default function App() {
       await submitCallTx(providers!, callTxOptions);
       appendLog(`Received ${receiveAmount} tokens`);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error receiving tokens: ' + errorMessage);
-      alert('Failed to receive tokens: ' + errorMessage);
+      appendLog('Error receiving tokens: ' + getErrorMessage(e));
+      alert('Failed to receive tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -337,10 +276,9 @@ export default function App() {
       await submitCallTx(providers!, callTxOptions);
       appendLog(`Deposited ${depositNightAmount} STAR (${Number(depositNightAmount) / 1_000_000} NIGHT)`);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error depositing NIGHT tokens: ' + errorMessage);
-      alert('Failed to deposit NIGHT tokens: ' + errorMessage);
+      appendLog('Error depositing NIGHT tokens: ' + getErrorMessage(e));
+      alert('Failed to deposit NIGHT tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -374,10 +312,9 @@ export default function App() {
         `Withdrew ${withdrawNightAmount} STAR (${Number(withdrawNightAmount) / 1_000_000} NIGHT) to ${address.unshieldedAddress}`
       );
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error withdrawing NIGHT tokens: ' + errorMessage);
-      alert('Failed to withdraw NIGHT tokens: ' + errorMessage);
+      appendLog('Error withdrawing NIGHT tokens: ' + getErrorMessage(e));
+      alert('Failed to withdraw NIGHT tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -387,12 +324,13 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1>🌙 Midnight dApp</h1>
+          <h1>Midnight dApp</h1>
           <p className="subtitle">Tokens operations</p>
         </div>
       </header>
 
       <main className="container">
+        {/* Wallet Connection Section */}
         <section className="wallet-section">
           <div className="wallet-info">
             <div className="status-badge" data-connected={!!connectedAPI}>
@@ -404,7 +342,7 @@ export default function App() {
                 <span className="info-label">Network:</span> {networkId}
                 {availableAPIs[0] && (
                   <>
-                    <span className="separator">•</span>
+                    <span className="separator">|</span>
                     <span className="info-label">Wallet:</span> {availableAPIs[0].name}
                   </>
                 )}
@@ -470,6 +408,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Contract Deployment Section */}
         <section className="wallet-section">
           <div className="wallet-info">
             <div className="network-info">
@@ -484,7 +423,9 @@ export default function App() {
           </div>
         </section>
 
+        {/* Token Operations */}
         <section className="contracts-grid">
+          {/* Unshielded Tokens Card */}
           <div className="card">
             <div className="card-header">
               <h2>Unshielded Tokens</h2>
@@ -557,6 +498,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* NIGHT Tokens Card */}
           <div className="card">
             <div className="card-header">
               <h2>NIGHT Tokens</h2>
@@ -608,16 +550,17 @@ export default function App() {
           </div>
         </section>
 
+        {/* Activity Log */}
         <section className="activity-section">
-          <h3 className="activity-title">📊 Activity Log</h3>
+          <h3 className="activity-title">Activity Log</h3>
           <div className="activity-log">
-            {txLog.length === 0 ? (
+            {logs.length === 0 ? (
               <p className="empty-state">No activity yet</p>
             ) : (
               <ul className="log-list">
-                {txLog.map((l, i) => (
-                  <li key={i} className="log-item">
-                    {l}
+                {logs.map((log, index) => (
+                  <li key={index} className="log-item">
+                    {log}
                   </li>
                 ))}
               </ul>
