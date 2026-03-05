@@ -24,7 +24,13 @@ import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
 import { getErrorMessage } from './utils/errors';
 
-import { CompiledDemoContract, createSimpleContractInstance, DemoCircuits, DemoContract, DemoProviders } from './lib/types';
+import {
+  CompiledDemoContract,
+  createSimpleContractInstance,
+  DemoCircuits,
+  DemoContract,
+  DemoProviders,
+} from './lib/types';
 import { transferUnshieldedFromFaucet } from './lib/faucet';
 import * as CompiledContract from './contract/index.js';
 
