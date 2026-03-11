@@ -32,7 +32,6 @@ import {
   DemoProviders,
 } from './lib/types';
 import { transferUnshieldedFromFaucet } from './lib/faucet';
-import * as CompiledContract from './contract/index.js';
 
 import './styles.css';
 
@@ -44,14 +43,14 @@ export default function App() {
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
 
-  const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(null);
+  const [deployed, setDeployed] = useState<DeployedContract<DemoContract> | null>(null);
   const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
 
-  const [mintAmount, setMintAmount] = useState<string>('1000');
-  const [claimAmount, setClaimAmount] = useState<string>('500');
-  const [receiveAmount, setReceiveAmount] = useState<string>('100');
-  const [depositNightAmount, setDepositNightAmount] = useState<string>('50');
-  const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('25');
+  const [mintAmount, setMintAmount] = useState<string>('10000');
+  const [claimAmount, setClaimAmount] = useState<string>('6000');
+  const [receiveAmount, setReceiveAmount] = useState<string>('1500');
+  const [depositNightAmount, setDepositNightAmount] = useState<string>('5000');
+  const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('2501');
   const [mintedColor, setMintedColor] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -168,7 +167,7 @@ export default function App() {
     setIsLoading(true);
     try {
       const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
+      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract});
       setDeployed(deployedContract);
       setContractInstance(demoContractInstance);
       appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
