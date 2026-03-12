@@ -167,7 +167,7 @@ export default function App() {
     setIsLoading(true);
     try {
       const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract});
+      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
       setDeployed(deployedContract);
       setContractInstance(demoContractInstance);
       appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
