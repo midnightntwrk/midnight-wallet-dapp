@@ -30,15 +30,15 @@
     "@midnight-ntwrk/compact-runtime": "0.15.0-rc.0",
     "@midnight-ntwrk/dapp-connector-api": "4.0.1",
     "@midnight-ntwrk/ledger-v8": "8.0.2",
-    "@midnight-ntwrk/midnight-js-contracts": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-types": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/midnight-js-utils": "3.2.1-0-pre.3ce66bd",
-    "@midnight-ntwrk/wallet-sdk-address-format": "",
+    "@midnight-ntwrk/midnight-js-contracts": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-types": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/midnight-js-utils": "3.2.1-0-pre.e4706d2",
+    "@midnight-ntwrk/wallet-sdk-address-format": "3.0.1",
     "bech32": "^2.0.0",
     "events": "^3.3.0",
     "graphql": "^16.11.0",
@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
-    "@midnight-ntwrk/midnight-js-compact": "^3.2.1-0-pre.3ce66bd",
+    "@midnight-ntwrk/midnight-js-compact": "^3.2.1-0-pre.e4706d2",
     "@playwright/test": "^1.50.0",
     "@types/events": "^3",
     "@types/node": "^25.5.0",
@@ -81,7 +81,7 @@
   "resolutions": {
     "@midnight-ntwrk/compact-js": "2.5.0-rc.1",
     "@midnight-ntwrk/ledger-v8": "8.0.2",
-    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.3ce66bd",
+    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.e4706d2",
     "effect": "3.19.15"
   }
 }

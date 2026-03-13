@@ -8,6 +8,8 @@ A minimal React + Vite starter template for building decentralized applications 
 - **Yarn** (configured via `.yarnrc.yml`)
 - **Lace Wallet** (Midnight edition) installed and unlocked in your browser
 - Access to a Midnight test environment (preview, preprod, or local)
+- Optional: Docker for containerized deployment
+- COMPACTC_VERSION env var for contract compilation
 
 ## Quick Start
 
