@@ -26,7 +26,7 @@ import {
   FinalizedTransaction,
   Proof,
   SignatureEnabled,
-  Transaction
+  Transaction,
 } from '@midnight-ntwrk/ledger-v8';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import { ShieldedAddress } from './providers';
