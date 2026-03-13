@@ -16,8 +16,11 @@
 import type { Buffer as BufferType } from 'buffer';
 
 declare global {
+  // eslint-disable-next-line no-var
   var Buffer: typeof BufferType;
-  var process: NodeJS.Process;
+  // eslint-disable-next-line no-var
+  var process: typeof import('process');
+  // eslint-disable-next-line no-var
   var global: typeof globalThis;
 }
 
