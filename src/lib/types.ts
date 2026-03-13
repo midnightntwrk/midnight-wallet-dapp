@@ -16,11 +16,11 @@ import { CompiledContract } from '@midnight-ntwrk/compact-js';
 
 import * as CompiledOutput from '../contract/index';
 import { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
-import { ImpureCircuitId } from '@midnight-ntwrk/compact-js';
+import { ProvableCircuitId } from '@midnight-ntwrk/compact-js';
 
 export type DemoContract = CompiledOutput.Contract<undefined>;
 
-export type DemoCircuits = ImpureCircuitId<DemoContract>;
+export type DemoCircuits = ProvableCircuitId<DemoContract>;
 
 export type DemoProviders = MidnightProviders<DemoCircuits>;
 

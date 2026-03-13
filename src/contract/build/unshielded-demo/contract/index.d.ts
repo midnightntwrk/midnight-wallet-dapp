@@ -16,6 +16,19 @@ export type ImpureCircuits<PS> = {
                         user_addr_0: { bytes: Uint8Array }): __compactRuntime.CircuitResults<PS, []>;
 }
 
+export type ProvableCircuits<PS> = {
+  mintAndReceive(context: __compactRuntime.CircuitContext<PS>, amount_0: bigint): __compactRuntime.CircuitResults<PS, Uint8Array>;
+  sendToUser(context: __compactRuntime.CircuitContext<PS>,
+             amount_0: bigint,
+             user_addr_0: { bytes: Uint8Array }): __compactRuntime.CircuitResults<PS, []>;
+  receiveTokens(context: __compactRuntime.CircuitContext<PS>, amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  receiveNightTokens(context: __compactRuntime.CircuitContext<PS>,
+                     amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  sendNightTokensToUser(context: __compactRuntime.CircuitContext<PS>,
+                        amount_0: bigint,
+                        user_addr_0: { bytes: Uint8Array }): __compactRuntime.CircuitResults<PS, []>;
+}
+
 export type PureCircuits = {
 }
 
@@ -43,6 +56,7 @@ export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>>
   witnesses: W;
   circuits: Circuits<PS>;
   impureCircuits: ImpureCircuits<PS>;
+  provableCircuits: ProvableCircuits<PS>;
   constructor(witnesses: W);
   initialState(context: __compactRuntime.ConstructorContext<PS>): __compactRuntime.ConstructorResult<PS>;
 }
