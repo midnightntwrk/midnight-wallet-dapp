@@ -66,13 +66,7 @@ export default defineConfig({
     },
   ],
   optimizeDeps: {
-    include: [
-      'level',
-      'browser-level',
-      'abstract-level',
-      'level-supports',
-      'level-transcoder',
-    ],
+    include: ['level', 'browser-level', 'abstract-level', 'level-supports', 'level-transcoder'],
     esbuildOptions: {
       target: 'esnext',
     },
