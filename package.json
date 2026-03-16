@@ -30,14 +30,14 @@
     "@midnight-ntwrk/compact-runtime": "0.14.0",
     "@midnight-ntwrk/dapp-connector-api": "4.0.1",
     "@midnight-ntwrk/ledger-v7": "7.0.0",
-    "@midnight-ntwrk/midnight-js-contracts": "3.2.0",
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "3.2.0",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "3.2.0",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "3.2.0",
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "3.2.0",
-    "@midnight-ntwrk/midnight-js-network-id": "3.2.0",
-    "@midnight-ntwrk/midnight-js-types": "3.2.0",
-    "@midnight-ntwrk/midnight-js-utils": "3.2.0",
+    "@midnight-ntwrk/midnight-js-contracts": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-types": "3.2.1-0-pre.e5e52f1",
+    "@midnight-ntwrk/midnight-js-utils": "3.2.1-0-pre.e5e52f1",
     "@midnight-ntwrk/wallet-sdk-facade": "2.0.0",
     "@midnight-ntwrk/wallet-sdk-hd": "3.0.1",
     "bech32": "^2.0.0",
@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
-    "@midnight-ntwrk/midnight-js-compact": "^3.2.0",
+    "@midnight-ntwrk/midnight-js-compact": "3.2.1-0-pre.e5e52f1",
     "@playwright/test": "^1.50.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -79,7 +79,7 @@
   "resolutions": {
     "@midnight-ntwrk/compact-js": "2.4.3",
     "@midnight-ntwrk/ledger-v7": "7.0.0",
-    "@midnight-ntwrk/midnight-js-network-id": "3.2.0",
+    "@midnight-ntwrk/midnight-js-network-id": "3.2.1-0-pre.e5e52f1",
     "effect": "3.19.15"
   }
 }
