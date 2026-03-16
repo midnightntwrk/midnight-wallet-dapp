@@ -117,6 +117,15 @@ export function createWalletProvidersFromConnectedAPI(
         const serializedStr = uint8ArrayToHex(serialized);
         console.log('[WalletAdapter] submitTx: Converted to hex string length:', serializedStr.length);
 
+        const copy = new Uint8Array(serialized);
+        const blob = new Blob([copy], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tx-${Date.now()}.bin`;
+        a.click();
+        URL.revokeObjectURL(url);
+
         console.log(`[WalletAdapter] submitTx: Submitting transaction to wallet: ${tx.toString()}`);
         await connectedAPI.submitTransaction(serializedStr);
         console.log('[WalletAdapter] submitTx: Transaction submitted successfully to wallet');
