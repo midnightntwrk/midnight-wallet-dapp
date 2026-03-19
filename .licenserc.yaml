@@ -47,7 +47,7 @@ header:
     - '.editorconfig'
     - '**/*.d.ts'
     - '**/generated/**'
-    - '**/build/**'
+    - '**compiled**'
     - '**/compiled/**'
     - '**/managed/**'
     - '**/auto-generated/**'

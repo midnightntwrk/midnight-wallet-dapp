@@ -13,4 +13,4 @@
  * limitations under the License.
  */
 
-export * from './build/unshielded-demo/contract/index.js';
+export * from './compiled/token-transfers/contract/index.js';

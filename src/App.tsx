@@ -14,7 +14,12 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { deployContract, type DeployedContract, submitCallTx } from '@midnight-ntwrk/midnight-js-contracts';
+import {
+  deployContract,
+  findDeployedContract,
+  type FoundContract,
+  submitCallTx,
+} from '@midnight-ntwrk/midnight-js-contracts';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
@@ -37,12 +42,14 @@ export default function App() {
   const { logs, appendLog } = useActivityLog();
   const { availableAPIs } = useWalletDetection(appendLog);
 
+  const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
 
-  const [deployed, setDeployed] = useState<DeployedContract<DemoContract> | null>(null);
+  const [deployed, setDeployed] = useState<FoundContract<DemoContract> | null>(null);
   const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
+  const [joinAddress, setJoinAddress] = useState<string>('');
 
   const [mintAmount, setMintAmount] = useState<string>('10000');
   const [claimAmount, setClaimAmount] = useState<string>('6000');
@@ -51,6 +58,11 @@ export default function App() {
   const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('2501');
   const [mintedColor, setMintedColor] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [shieldedMintAmount, setShieldedMintAmount] = useState<string>('10000');
+  const [shieldedClaimAmount, setShieldedSendAmount] = useState<string>('6000');
+  const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
+  const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
 
   useEffect(() => {
     try {
@@ -66,7 +78,7 @@ export default function App() {
       return;
     }
 
-    const initialAPI = availableAPIs[0];
+    const initialAPI = availableAPIs[selectedWalletIndex];
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
@@ -90,7 +102,7 @@ export default function App() {
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
 
-      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'unshielded-demo');
+      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'token-transfers');
       setProviders(demoCircuitsMidnightProviders);
       appendLog('Providers initialized for Mint Contract');
 
@@ -135,6 +147,29 @@ export default function App() {
       console.error(e);
       appendLog('Error deploying contract: ' + getErrorMessage(e));
       alert('Failed to deploy contract: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onJoinContract() {
+    if (!providers) return alert('Connect wallet first');
+    if (!joinAddress.trim()) return alert('Enter a contract address');
+
+    setIsLoading(true);
+    try {
+      const demoContractInstance: DemoContract = createSimpleContractInstance();
+      const foundContract = await findDeployedContract(providers, {
+        compiledContract: CompiledDemoContract,
+        contractAddress: joinAddress.trim(),
+      });
+      setDeployed(foundContract);
+      setContractInstance(demoContractInstance);
+      appendLog('Joined contract at ' + foundContract.deployTxData.public.contractAddress);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error joining contract: ' + getErrorMessage(e));
+      alert('Failed to join contract: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -285,11 +320,99 @@ export default function App() {
     }
   }
 
+  async function onDepositShielded() {
+    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!shieldedColor) return alert('Mint & claim shielded tokens first to obtain a color');
+
+    setIsLoading(true);
+    try {
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
+
+      const coin = {
+        nonce,
+        color: shieldedColor,
+        value: BigInt(shieldedDepositAmount),
+      };
+
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'receiveShieldedTokens' as DemoCircuits,
+        args: [coin] as [{ nonce: Uint8Array; color: Uint8Array; value: bigint }],
+      };
+
+      await submitCallTx(providers!, callTxOptions);
+      appendLog(`Deposited ${shieldedDepositAmount} shielded tokens`);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error depositing shielded tokens: ' + getErrorMessage(e));
+      alert('Failed to deposit shielded tokens: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onMintAndClaimShielded() {
+    if (!deployed || !contractInstance) return alert('Deploy contract first');
+
+    setIsLoading(true);
+    try {
+      const shieldedAddress = await connectedAPI?.getShieldedAddresses();
+      if (!shieldedAddress?.shieldedCoinPublicKey) {
+        return alert('No shielded coin public key available');
+      }
+
+      const publicKeyBytes = new Uint8Array(
+        shieldedAddress.shieldedCoinPublicKey.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
+      );
+
+      const domainSep = crypto.getRandomValues(new Uint8Array(32));
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
+
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'mintAndSendShielded' as DemoCircuits,
+        args: [
+          domainSep,
+          BigInt(shieldedMintAmount),
+          nonce,
+          { bytes: publicKeyBytes },
+          BigInt(shieldedClaimAmount),
+        ] as [Uint8Array, bigint, Uint8Array, { bytes: Uint8Array }, bigint],
+      };
+
+      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const result = callTxData.private.result as {
+        change: { is_some: boolean; value: { nonce: Uint8Array; color: Uint8Array; value: bigint } };
+        sent: { nonce: Uint8Array; color: Uint8Array; value: bigint };
+      };
+
+      setShieldedColor(result.sent.color);
+      const colorHex = Array.from(result.sent.color)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      appendLog(
+        `Minted ${shieldedMintAmount} and claimed ${shieldedClaimAmount} shielded tokens (color: 0x${colorHex})`
+      );
+      appendLog(`  Claimed coin value: ${result.sent.value}`);
+      if (result.change.is_some) {
+        appendLog(`  Change coin value: ${result.change.value.value}`);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error in mint & claim shielded: ' + getErrorMessage(e));
+      alert('Failed to mint & claim shielded: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1>Midnight dApp</h1>
+          <h1>Midnight Wallet dApp</h1>
           <p className="subtitle">Tokens operations</p>
         </div>
       </header>
@@ -305,10 +428,10 @@ export default function App() {
             {connectedAPI && (
               <div className="network-info">
                 <span className="info-label">Network:</span> {networkId}
-                {availableAPIs[0] && (
+                {availableAPIs[selectedWalletIndex] && (
                   <>
                     <span className="separator">|</span>
-                    <span className="info-label">Wallet:</span> {availableAPIs[0].name}
+                    <span className="info-label">Wallet:</span> {availableAPIs[selectedWalletIndex].name}
                   </>
                 )}
               </div>
@@ -317,6 +440,21 @@ export default function App() {
           <div className="wallet-actions">
             {!connectedAPI ? (
               <>
+                {availableAPIs.length > 1 && (
+                  <select
+                    id="walletSelect"
+                    value={selectedWalletIndex}
+                    onChange={(e) => setSelectedWalletIndex(Number(e.target.value))}
+                    className="input"
+                    style={{ maxWidth: '200px' }}
+                  >
+                    {availableAPIs.map((api, index) => (
+                      <option key={api.name} value={index}>
+                        {api.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   id="networkSelect"
                   value={networkId}
@@ -369,20 +507,53 @@ export default function App() {
           </div>
         </section>
 
-        {/* Contract Deployment Section */}
-        <section className="wallet-section">
-          <div className="wallet-info">
-            <div className="network-info">
-              <span className="info-label">Contract Address:</span>
-              <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+        {/* Contract Section */}
+        <div className="contract-setup-grid">
+          <section className="contract-card">
+            <div className="contract-card-header">
+              <h3>Deploy New Contract</h3>
+              <span className="contract-card-badge">New</span>
             </div>
-          </div>
-          <div className="wallet-actions">
-            <button onClick={onDeploy} disabled={!providers || isLoading} className="btn btn-primary">
-              {isLoading ? 'Processing...' : 'Deploy Contract'}
-            </button>
-          </div>
-        </section>
+            <div className="contract-card-content">
+              <button
+                onClick={onDeploy}
+                disabled={!providers || !!deployed || isLoading}
+                className="btn btn-primary btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Deploy Contract'}
+              </button>
+            </div>
+          </section>
+          <section className="contract-card">
+            <div className="contract-card-header">
+              <h3>Join Existing Contract</h3>
+              <span className="contract-card-badge badge-secondary">Join</span>
+            </div>
+            <div className="contract-card-content">
+              <div className="form-group">
+                <input
+                  type="text"
+                  value={joinAddress}
+                  onChange={(e) => setJoinAddress(e.target.value)}
+                  className="input"
+                  placeholder="Enter contract address..."
+                  disabled={!!deployed || isLoading}
+                />
+              </div>
+              <button
+                onClick={onJoinContract}
+                disabled={!providers || !joinAddress.trim() || !!deployed || isLoading}
+                className="btn btn-primary btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Join Contract'}
+              </button>
+            </div>
+          </section>
+        </div>
+        <div className="info-box" style={{ marginBottom: '1.25rem' }}>
+          <span className="info-label">Contract Address:</span>
+          <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+        </div>
 
         {/* Token Operations */}
         <section className="contracts-grid">
@@ -506,6 +677,78 @@ export default function App() {
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Withdraw NIGHT'}
+              </button>
+            </div>
+          </div>
+
+          {/* Shielded Tokens Card */}
+          <div className="card">
+            <div className="card-header">
+              <h2>Shielded Tokens</h2>
+            </div>
+            <div className="card-content">
+              <div className="form-group">
+                <label htmlFor="shieldedMintAmount">Mint Amount</label>
+                <input
+                  id="shieldedMintAmount"
+                  type="number"
+                  value={shieldedMintAmount}
+                  onChange={(e) => setShieldedMintAmount(e.target.value)}
+                  className="input"
+                  placeholder="10000"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="shieldedClaimAmount">Claim Amount</label>
+                <input
+                  id="shieldedClaimAmount"
+                  type="number"
+                  value={shieldedClaimAmount}
+                  onChange={(e) => setShieldedSendAmount(e.target.value)}
+                  className="input"
+                  placeholder="6000"
+                />
+              </div>
+              <button
+                onClick={onMintAndClaimShielded}
+                disabled={!deployed || !providers || isLoading}
+                className="btn btn-accent btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Mint & Claim Shielded'}
+              </button>
+
+              <div className="info-box">
+                <span className="info-label">Token Color:</span>
+                <code className="color-code">
+                  {shieldedColor
+                    ? '0x' +
+                      Array.from(shieldedColor)
+                        .map((b) => b.toString(16).padStart(2, '0'))
+                        .join('')
+                    : '—'}
+                </code>
+              </div>
+
+              <div className="divider"></div>
+
+              <div className="form-group">
+                <label htmlFor="shieldedDepositAmount">Deposit Amount</label>
+                <input
+                  id="shieldedDepositAmount"
+                  type="number"
+                  value={shieldedDepositAmount}
+                  onChange={(e) => setShieldedDepositAmount(e.target.value)}
+                  className="input"
+                  placeholder="1500"
+                />
+              </div>
+              <button
+                onClick={onDepositShielded}
+                disabled={!deployed || !providers || !shieldedColor || isLoading}
+                className="btn btn-accent btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Deposit Shielded'}
               </button>
             </div>
           </div>

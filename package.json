@@ -17,7 +17,7 @@
     "env:down": "docker compose -f compose.yml down",
     "env:down:latest": "docker compose -f compose_latest.yml down",
     "compact": "yarn fetch-compactc && yarn contract-demo",
-    "contract-demo": "yarn run-compactc src/contract/contracts/unshielded-demo.compact src/contract/build/unshielded-demo",
+    "contract-demo": "yarn run-compactc src/contract/contracts/token-transfers.compact src/contract/compiled/token-transfers",
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
