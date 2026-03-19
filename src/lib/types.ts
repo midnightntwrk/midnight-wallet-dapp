@@ -31,5 +31,5 @@ export const CompiledDemoContract = CompiledContract.make<CompiledOutput.Contrac
   CompiledOutput.Contract
 ).pipe(
   CompiledContract.withVacantWitnesses,
-  CompiledContract.withCompiledFileAssets('./contract/build/unshielded-demo')
+  CompiledContract.withCompiledFileAssets('./contract/compiled/token-transfers')
 );

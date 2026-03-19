@@ -41,7 +41,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'src/contract/*',
+          src: 'src/contract/compiled',
           dest: 'contract',
         },
       ],
@@ -51,7 +51,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           // Only apply to /contract/* paths - return 404 if file doesn't exist
-          if (req.url?.startsWith('/contract/')) {
+          if (req.url?.startsWith('/contract/compiled/')) {
             const filePath = path.join(server.config.root, 'src', req.url);
 
             if (!fs.existsSync(filePath)) {

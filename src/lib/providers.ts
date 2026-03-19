@@ -40,7 +40,7 @@ export async function buildProvidersFromConnectedAPI(
   connectedAPI: ConnectedAPI,
   contractName: string
 ): Promise<DemoProviders> {
-  const zkConfigHttpBase = window.location.origin + '/contract/build/' + contractName;
+  const zkConfigHttpBase = window.location.origin + '/contract/compiled/' + contractName;
   const zkConfigProvider = new FetchZkConfigProvider<DemoCircuits>(zkConfigHttpBase, fetch.bind(window));
 
   const config = await connectedAPI.getConfiguration();

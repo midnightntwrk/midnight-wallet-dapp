@@ -1,0 +1,60 @@
+import CompactStandardLibrary;
+
+/**
+ * Mint using mintUnshieldedToken() + receiveUnshielded()
+ */
+export circuit mintAndReceive(amount: Uint<64>): Bytes<32> {
+    const domain = pad(32, "simple:receive");
+
+    const color = mintUnshieldedToken(
+        disclose(domain),
+        disclose(amount),
+        left<ContractAddress, UserAddress>(kernel.self())
+    );
+
+    return color;
+}
+
+/**
+ * Send to user address
+ */
+export circuit sendToUser(amount: Uint<64>, user_addr: UserAddress): [] {
+    const domain = pad(32, "simple:receive");
+    const color = tokenType(disclose(domain), kernel.self());
+
+    sendUnshielded(
+        color,
+        disclose(amount) as Uint<128>,
+        right<ContractAddress, UserAddress>(disclose(user_addr))
+    );
+}
+
+export circuit receiveTokens(amount: Uint<128>): [] {
+    const domain = pad(32, "simple:receive");
+    const color = tokenType(domain, kernel.self());
+    receiveUnshielded(color, disclose(amount));
+}
+
+export circuit receiveNightTokens(amount: Uint<128>): [] {
+   receiveUnshielded(default<Bytes<32>>, disclose(amount));
+}
+
+export circuit sendNightTokensToUser(amount: Uint<64>, user_addr: UserAddress): [] {
+    sendUnshielded(
+        default<Bytes<32>>,
+        disclose(amount) as Uint<128>,
+        right<ContractAddress, UserAddress>(disclose(user_addr))
+    );
+}
+
+export circuit receiveShieldedTokens(coin: ShieldedCoinInfo): [] {
+   receiveShielded(disclose(coin));
+}
+
+export circuit sendShieldedToUser(input: QualifiedShieldedCoinInfo, publicKey: ZswapCoinPublicKey, value: Uint<128>): ShieldedSendResult {
+  return sendShielded(disclose(input), left<ZswapCoinPublicKey, ContractAddress>(disclose(publicKey)), disclose(value));
+}
+
+export circuit mintShieldedToSelf(domainSep: Bytes<32>, value: Uint<64>, nonce: Bytes<32>): ShieldedCoinInfo {
+  return mintShieldedToken(disclose(domainSep), disclose(value), disclose(nonce), right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+}

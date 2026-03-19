@@ -82,7 +82,7 @@ The wallet connector is expected at `window.midnight.lace` and must support `ena
 ## Features
 
 - **Wallet Connection**: Auto-detects Midnight wallet APIs, supports multiple networks
-- **Contract Deployment**: Deploy the unshielded-demo Compact contract
+- **Contract Deployment**: Deploy the token-transfers Compact contract
 - **Token Operations**:
   - Mint tokens with unique color identifier
   - Claim minted tokens to wallet address
