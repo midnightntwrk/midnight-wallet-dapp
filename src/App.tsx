@@ -42,6 +42,7 @@ export default function App() {
   const { logs, appendLog } = useActivityLog();
   const { availableAPIs } = useWalletDetection(appendLog);
 
+  const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
@@ -77,7 +78,7 @@ export default function App() {
       return;
     }
 
-    const initialAPI = availableAPIs[0];
+    const initialAPI = availableAPIs[selectedWalletIndex];
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
@@ -427,10 +428,10 @@ export default function App() {
             {connectedAPI && (
               <div className="network-info">
                 <span className="info-label">Network:</span> {networkId}
-                {availableAPIs[0] && (
+                {availableAPIs[selectedWalletIndex] && (
                   <>
                     <span className="separator">|</span>
-                    <span className="info-label">Wallet:</span> {availableAPIs[0].name}
+                    <span className="info-label">Wallet:</span> {availableAPIs[selectedWalletIndex].name}
                   </>
                 )}
               </div>
@@ -439,6 +440,21 @@ export default function App() {
           <div className="wallet-actions">
             {!connectedAPI ? (
               <>
+                {availableAPIs.length > 1 && (
+                  <select
+                    id="walletSelect"
+                    value={selectedWalletIndex}
+                    onChange={(e) => setSelectedWalletIndex(Number(e.target.value))}
+                    className="input"
+                    style={{ maxWidth: '200px' }}
+                  >
+                    {availableAPIs.map((api, index) => (
+                      <option key={api.name} value={index}>
+                        {api.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   id="networkSelect"
                   value={networkId}
