@@ -17,16 +17,24 @@ import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-pri
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import type { ConnectedAPI, ProvingProvider } from '@midnight-ntwrk/dapp-connector-api';
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits, DemoProviders } from './types';
+import { ProofProvider, UnboundTransaction } from '@midnight-ntwrk/midnight-js-types';
+import { CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {
   shieldedAddress: string;
   shieldedCoinPublicKey: string;
   shieldedEncryptionPublicKey: string;
 };
+
+export const createProofProvider = (provingProvider: ProvingProvider): ProofProvider => ({
+  async proveTx(unprovenTx: UnprovenTransaction): Promise<UnboundTransaction> {
+    return unprovenTx.prove(provingProvider, CostModel.initialCostModel());
+  },
+});
 
 export async function buildProvidersFromConnectedAPI(
   connectedAPI: ConnectedAPI,
@@ -37,7 +45,12 @@ export async function buildProvidersFromConnectedAPI(
 
   const config = await connectedAPI.getConfiguration();
   const publicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
+
   const proofProvider = httpClientProofProvider(config.proverServerUri!, zkConfigProvider);
+
+  // TODO: not implemented in dapp-connector yet
+  // const provingProvider = await connectedAPI.getProvingProvider(zkConfigProvider.asKeyMaterialProvider());
+  // const proofProvider = createProofProvider(provingProvider);
 
   const shieldedAddress: ShieldedAddress = await connectedAPI.getShieldedAddresses();
   const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
@@ -49,6 +62,7 @@ export async function buildProvidersFromConnectedAPI(
     shieldedAddress,
     unshieldedAddress.unshieldedAddress
   );
+
   // For demo purposes only, we use a simple password provider that returns a fixed password.
   const privateStateProvider = levelPrivateStateProvider({
     privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',

@@ -7,7 +7,9 @@ A minimal React + Vite starter template for building decentralized applications 
 - **Node.js** 22+
 - **Yarn** (configured via `.yarnrc.yml`)
 - **Lace Wallet** (Midnight edition) installed and unlocked in your browser
-- Access to a Midnight test environment (preview, qanet, or local)
+- Access to a Midnight test environment (preview, preprod, or local)
+- Optional: Docker for containerized deployment
+- COMPACTC_VERSION env var for contract compilation
 
 ## Quick Start
 
@@ -107,18 +109,22 @@ Access at http://localhost:8080
 
 ## Local Blockchain Environment
 
-Start a complete local environment with proof-server, indexer, and midnight-node:
+### Start a complete local environment with proof-server, indexer, and midnight-node:
 
 ```bash
 yarn env:up      # Start services
 yarn env:down    # Stop services
 ```
 
-Services:
+### Services:
 
 - **Proof Server**: port 6300
 - **Indexer**: port 8088
 - **Midnight Node**: port 9944
+
+### Prefund wallet seed:
+
+abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon diesel
 
 ## Development
 

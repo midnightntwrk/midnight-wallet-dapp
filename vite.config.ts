@@ -31,6 +31,7 @@ export default defineConfig({
       util: 'util',
       crypto: 'crypto-browserify',
       stream: 'stream-browserify',
+      events: 'events',
     },
   },
   // ❌ remove topLevelAwait() from plugins:
@@ -64,6 +65,12 @@ export default defineConfig({
       },
     },
   ],
+  optimizeDeps: {
+    include: ['level', 'browser-level', 'abstract-level', 'level-supports', 'level-transcoder'],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
   build: {
     target: 'esnext',
   },

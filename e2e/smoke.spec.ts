@@ -16,6 +16,13 @@
 import { test, expect } from '@playwright/test';
 import { injectMockWalletScript } from './mocks/mockWallet';
 
+test.beforeEach(async ({ page }) => {
+  page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') console.log('CONSOLE ERROR:', msg.text());
+  });
+});
+
 test.describe('App Load', () => {
   test('displays title and header', async ({ page }) => {
     await page.goto('/');

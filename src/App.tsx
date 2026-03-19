@@ -31,8 +31,6 @@ import {
   DemoContract,
   DemoProviders,
 } from './lib/types';
-import { transferUnshieldedFromFaucet } from './lib/faucet';
-
 import './styles.css';
 
 export default function App() {
@@ -121,44 +119,6 @@ export default function App() {
     setConnectedAPI(null);
     setProviders(null);
     appendLog('Disconnected');
-  }
-
-  async function onRequestDustFromFaucet() {
-    if (!connectedAPI || !providers) return alert('Connect wallet first');
-
-    setIsLoading(true);
-    try {
-      appendLog('Requesting tokens from faucet...');
-
-      const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
-      appendLog(`Your Unshielded Address: ${unshieldedAddress.unshieldedAddress}`);
-
-      const config = await connectedAPI.getConfiguration();
-      appendLog('Transferring 1,000,000 STAR (1 NIGHT) from faucet...');
-
-      const txHash = await transferUnshieldedFromFaucet(
-        unshieldedAddress.unshieldedAddress,
-        1_000_000n,
-        config.indexerUri,
-        config.indexerWsUri,
-        config.proverServerUri!,
-        config.substrateNodeUri.replace('http://', 'ws://').replace('https://', 'wss://')
-      );
-
-      appendLog(`Transfer successful! TX Hash: ${txHash}`);
-      appendLog('Waiting for transaction to be processed...');
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      const dust = await connectedAPI.getDustBalance();
-      appendLog(`Updated Dust Balance: ${dust.balance.toString()} / ${dust.cap.toString()}`);
-      appendLog('Faucet transfer complete! You now have Night tokens and dust.');
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error transferring from faucet: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
   }
 
   async function onDeploy() {
@@ -376,11 +336,6 @@ export default function App() {
               </>
             ) : (
               <>
-                {networkId === 'undeployed' && (
-                  <button onClick={onRequestDustFromFaucet} disabled={isLoading} className="btn btn-accent">
-                    {isLoading ? 'Processing...' : 'Get Tokens from Faucet'}
-                  </button>
-                )}
                 {networkId === 'preview' && (
                   <a
                     href="https://faucet.preview.midnight.network/"
