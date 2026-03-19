@@ -17,12 +17,12 @@ import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-pri
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
-import type {ConnectedAPI, ProvingProvider} from '@midnight-ntwrk/dapp-connector-api';
+import type { ConnectedAPI, ProvingProvider } from '@midnight-ntwrk/dapp-connector-api';
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits, DemoProviders } from './types';
-import {ProofProvider, UnboundTransaction} from "@midnight-ntwrk/midnight-js-types";
-import {CostModel, UnprovenTransaction} from "@midnight-ntwrk/ledger-v8";
+import { ProofProvider, UnboundTransaction } from '@midnight-ntwrk/midnight-js-types';
+import { CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {
   shieldedAddress: string;
@@ -33,7 +33,7 @@ export type ShieldedAddress = {
 export const createProofProvider = (provingProvider: ProvingProvider): ProofProvider => ({
   async proveTx(unprovenTx: UnprovenTransaction): Promise<UnboundTransaction> {
     return unprovenTx.prove(provingProvider, CostModel.initialCostModel());
-  }
+  },
 });
 
 export async function buildProvidersFromConnectedAPI(
