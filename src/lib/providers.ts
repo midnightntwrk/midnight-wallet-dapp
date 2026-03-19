@@ -40,14 +40,6 @@ export async function buildProvidersFromConnectedAPI(
   connectedAPI: ConnectedAPI,
   contractName: string
 ): Promise<DemoProviders> {
-  console.log('[ConnectedAPI] Available methods and properties:');
-  for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(connectedAPI) ?? connectedAPI)) {
-    console.log(`  ${key}: ${typeof (connectedAPI as Record<string, unknown>)[key]}`);
-  }
-  for (const key of Object.keys(connectedAPI)) {
-    console.log(`  [own] ${key}: ${typeof (connectedAPI as Record<string, unknown>)[key]}`);
-  }
-
   const zkConfigHttpBase = window.location.origin + '/contract/build/' + contractName;
   const zkConfigProvider = new FetchZkConfigProvider<DemoCircuits>(zkConfigHttpBase, fetch.bind(window));
 
@@ -70,6 +62,7 @@ export async function buildProvidersFromConnectedAPI(
     shieldedAddress,
     unshieldedAddress.unshieldedAddress
   );
+
   // For demo purposes only, we use a simple password provider that returns a fixed password.
   const privateStateProvider = levelPrivateStateProvider({
     privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',
