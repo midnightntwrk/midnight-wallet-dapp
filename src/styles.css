@@ -226,7 +226,9 @@ body {
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .contract-card:hover {

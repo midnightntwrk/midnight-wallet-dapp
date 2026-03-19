@@ -19,6 +19,9 @@ import wasm from 'vite-plugin-wasm';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   define: {
@@ -29,7 +32,7 @@ export default defineConfig({
       process: 'process/browser',
       buffer: 'buffer',
       util: 'util',
-      crypto: 'crypto-browserify',
+      crypto: path.resolve(__dirname, 'src/lib/crypto-shim.ts'),
       stream: 'stream-browserify',
       events: 'events',
     },

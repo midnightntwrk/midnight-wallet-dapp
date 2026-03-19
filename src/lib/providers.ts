@@ -21,8 +21,13 @@ import type { ConnectedAPI, ProvingProvider } from '@midnight-ntwrk/dapp-connect
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits, DemoProviders } from './types';
-import { ProofProvider, UnboundTransaction } from '@midnight-ntwrk/midnight-js-types';
-import { CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
+import {
+  type BlockHashConfig,
+  type BlockHeightConfig,
+  ProofProvider,
+  UnboundTransaction,
+} from '@midnight-ntwrk/midnight-js-types';
+import { type ContractAddress, CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {
   shieldedAddress: string;
@@ -44,7 +49,21 @@ export async function buildProvidersFromConnectedAPI(
   const zkConfigProvider = new FetchZkConfigProvider<DemoCircuits>(zkConfigHttpBase, fetch.bind(window));
 
   const config = await connectedAPI.getConfiguration();
-  const publicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
+  const rawPublicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
+
+  const publicDataProvider = {
+    ...rawPublicDataProvider,
+    async queryZSwapAndContractState(
+      contractAddress: ContractAddress,
+      queryConfig?: BlockHeightConfig | BlockHashConfig
+    ) {
+      const result = await rawPublicDataProvider.queryZSwapAndContractState(contractAddress, queryConfig);
+      if (!result) return result;
+
+      const [zswapChainState, contractState, ledgerParameters] = result;
+      return [zswapChainState.postBlockUpdate(new Date()), contractState, ledgerParameters] as typeof result;
+    },
+  };
 
   const proofProvider = httpClientProofProvider(config.proverServerUri!, zkConfigProvider);
 

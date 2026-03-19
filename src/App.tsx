@@ -59,14 +59,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [shieldedMintAmount, setShieldedMintAmount] = useState<string>('10000');
-  const [shieldedReceiveAmount, setShieldedReceiveAmount] = useState<string>('1500');
-  const [shieldedClaimAmount, setShieldedClaimAmount] = useState<string>('6000');
-  const [mintedShieldedCoin, setMintedShieldedCoin] = useState<{
-    nonce: Uint8Array;
-    color: Uint8Array;
-    value: bigint;
-    mt_index: bigint;
-  } | null>(null);
+  const [shieldedClaimAmount, setShieldedSendAmount] = useState<string>('6000');
+  const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
+  const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
 
   useEffect(() => {
     try {
@@ -324,55 +319,18 @@ export default function App() {
     }
   }
 
-  async function onMintShielded() {
+  async function onDepositShielded() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
-
-    setIsLoading(true);
-    try {
-      const contractAddress = deployed.deployTxData.public.contractAddress;
-
-      const zswapState = await providers!.publicDataProvider.queryZSwapAndContractState(contractAddress);
-      if (!zswapState) return alert('Failed to query chain state');
-      const mtIndex = zswapState[0].firstFree;
-
-      const domainSep = crypto.getRandomValues(new Uint8Array(32));
-      const nonce = crypto.getRandomValues(new Uint8Array(32));
-
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress,
-        circuitId: 'mintShieldedToSelf' as DemoCircuits,
-        args: [domainSep, BigInt(shieldedMintAmount), nonce] as [Uint8Array, bigint, Uint8Array],
-      };
-
-      const callTxData = await submitCallTx(providers!, callTxOptions);
-      const coin = callTxData.private.result as { nonce: Uint8Array; color: Uint8Array; value: bigint };
-      setMintedShieldedCoin({ ...coin, mt_index: mtIndex });
-
-      const colorHex = Array.from(coin.color)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      appendLog(`Minted ${shieldedMintAmount} shielded tokens with color 0x${colorHex} (mt_index: ${mtIndex})`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error minting shielded tokens: ' + getErrorMessage(e));
-      alert('Failed to mint shielded tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function onReceiveShielded() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
-    if (!mintedShieldedCoin) return alert('Mint shielded tokens first to obtain a color');
+    if (!shieldedColor) return alert('Mint & claim shielded tokens first to obtain a color');
 
     setIsLoading(true);
     try {
       const nonce = crypto.getRandomValues(new Uint8Array(32));
+
       const coin = {
         nonce,
-        color: mintedShieldedCoin.color,
-        value: BigInt(shieldedReceiveAmount),
+        color: shieldedColor,
+        value: BigInt(shieldedDepositAmount),
       };
 
       const callTxOptions = {
@@ -383,19 +341,18 @@ export default function App() {
       };
 
       await submitCallTx(providers!, callTxOptions);
-      appendLog(`Received ${shieldedReceiveAmount} shielded tokens into contract`);
+      appendLog(`Deposited ${shieldedDepositAmount} shielded tokens`);
     } catch (e: unknown) {
       console.error(e);
-      appendLog('Error receiving shielded tokens: ' + getErrorMessage(e));
-      alert('Failed to receive shielded tokens: ' + getErrorMessage(e));
+      appendLog('Error depositing shielded tokens: ' + getErrorMessage(e));
+      alert('Failed to deposit shielded tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function onClaimShielded() {
+  async function onMintAndClaimShielded() {
     if (!deployed || !contractInstance) return alert('Deploy contract first');
-    if (!mintedShieldedCoin) return alert('Mint shielded tokens first');
 
     setIsLoading(true);
     try {
@@ -408,22 +365,20 @@ export default function App() {
         shieldedAddress.shieldedCoinPublicKey.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
       );
 
-      const input = {
-        nonce: mintedShieldedCoin.nonce,
-        color: mintedShieldedCoin.color,
-        value: mintedShieldedCoin.value,
-        mt_index: mintedShieldedCoin.mt_index,
-      };
+      const domainSep = crypto.getRandomValues(new Uint8Array(32));
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
 
       const callTxOptions = {
         compiledContract: CompiledDemoContract,
         contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'sendShieldedToUser' as DemoCircuits,
-        args: [input, { bytes: publicKeyBytes }, BigInt(shieldedClaimAmount)] as [
-          { nonce: Uint8Array; color: Uint8Array; value: bigint; mt_index: bigint },
-          { bytes: Uint8Array },
-          bigint,
-        ],
+        circuitId: 'mintAndSendShielded' as DemoCircuits,
+        args: [
+          domainSep,
+          BigInt(shieldedMintAmount),
+          nonce,
+          { bytes: publicKeyBytes },
+          BigInt(shieldedClaimAmount),
+        ] as [Uint8Array, bigint, Uint8Array, { bytes: Uint8Array }, bigint],
       };
 
       const callTxData = await submitCallTx(providers!, callTxOptions);
@@ -432,20 +387,21 @@ export default function App() {
         sent: { nonce: Uint8Array; color: Uint8Array; value: bigint };
       };
 
-      appendLog(`Claimed ${shieldedClaimAmount} shielded tokens`);
+      setShieldedColor(result.sent.color);
+      const colorHex = Array.from(result.sent.color)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      appendLog(
+        `Minted ${shieldedMintAmount} and claimed ${shieldedClaimAmount} shielded tokens (color: 0x${colorHex})`
+      );
       appendLog(`  Claimed coin value: ${result.sent.value}`);
       if (result.change.is_some) {
-        const updatedZswapState = await providers!.publicDataProvider.queryZSwapAndContractState(
-          deployed.deployTxData.public.contractAddress
-        );
-        const changeMtIndex = updatedZswapState ? updatedZswapState[0].firstFree - 1n : 0n;
-        setMintedShieldedCoin({ ...result.change.value, mt_index: changeMtIndex });
-        appendLog(`  Change coin value: ${result.change.value.value} (mt_index: ${changeMtIndex})`);
+        appendLog(`  Change coin value: ${result.change.value.value}`);
       }
     } catch (e: unknown) {
       console.error(e);
-      appendLog('Error claiming shielded tokens: ' + getErrorMessage(e));
-      alert('Failed to claim shielded tokens: ' + getErrorMessage(e));
+      appendLog('Error in mint & claim shielded: ' + getErrorMessage(e));
+      alert('Failed to mint & claim shielded: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -543,13 +499,13 @@ export default function App() {
               <span className="contract-card-badge">New</span>
             </div>
             <div className="contract-card-content">
-              <button onClick={onDeploy} disabled={!providers || !!deployed || isLoading} className="btn btn-primary btn-block">
+              <button
+                onClick={onDeploy}
+                disabled={!providers || !!deployed || isLoading}
+                className="btn btn-primary btn-block"
+              >
                 {isLoading ? 'Processing...' : 'Deploy Contract'}
               </button>
-              <div className="info-box">
-                <span className="info-label">Contract Address:</span>
-                <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
-              </div>
             </div>
           </section>
           <section className="contract-card">
@@ -577,6 +533,10 @@ export default function App() {
               </button>
             </div>
           </section>
+        </div>
+        <div className="info-box" style={{ marginBottom: '1.25rem' }}>
+          <span className="info-label">Contract Address:</span>
+          <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
         </div>
 
         {/* Token Operations */}
@@ -722,19 +682,32 @@ export default function App() {
                   placeholder="10000"
                 />
               </div>
+
+              <div className="form-group">
+                <label htmlFor="shieldedClaimAmount">Claim Amount</label>
+                <input
+                  id="shieldedClaimAmount"
+                  type="number"
+                  value={shieldedClaimAmount}
+                  onChange={(e) => setShieldedSendAmount(e.target.value)}
+                  className="input"
+                  placeholder="6000"
+                />
+              </div>
               <button
-                onClick={onMintShielded}
+                onClick={onMintAndClaimShielded}
                 disabled={!deployed || !providers || isLoading}
                 className="btn btn-accent btn-block"
               >
-                {isLoading ? 'Processing...' : 'Mint Shielded Tokens'}
+                {isLoading ? 'Processing...' : 'Mint & Claim Shielded'}
               </button>
+
               <div className="info-box">
-                <span className="info-label">Minted Color:</span>
+                <span className="info-label">Token Color:</span>
                 <code className="color-code">
-                  {mintedShieldedCoin
+                  {shieldedColor
                     ? '0x' +
-                      Array.from(mintedShieldedCoin.color)
+                      Array.from(shieldedColor)
                         .map((b) => b.toString(16).padStart(2, '0'))
                         .join('')
                     : '—'}
@@ -744,43 +717,22 @@ export default function App() {
               <div className="divider"></div>
 
               <div className="form-group">
-                <label htmlFor="shieldedClaimAmount">Claim Amount</label>
+                <label htmlFor="shieldedDepositAmount">Deposit Amount</label>
                 <input
-                  id="shieldedClaimAmount"
+                  id="shieldedDepositAmount"
                   type="number"
-                  value={shieldedClaimAmount}
-                  onChange={(e) => setShieldedClaimAmount(e.target.value)}
-                  className="input"
-                  placeholder="6000"
-                />
-              </div>
-              <button
-                onClick={onClaimShielded}
-                disabled={!deployed || !providers || !mintedShieldedCoin || isLoading}
-                className="btn btn-accent btn-block"
-              >
-                {isLoading ? 'Processing...' : 'Claim Shielded Tokens'}
-              </button>
-
-              <div className="divider"></div>
-
-              <div className="form-group">
-                <label htmlFor="shieldedReceiveAmount">Deposit Amount</label>
-                <input
-                  id="shieldedReceiveAmount"
-                  type="number"
-                  value={shieldedReceiveAmount}
-                  onChange={(e) => setShieldedReceiveAmount(e.target.value)}
+                  value={shieldedDepositAmount}
+                  onChange={(e) => setShieldedDepositAmount(e.target.value)}
                   className="input"
                   placeholder="1500"
                 />
               </div>
               <button
-                onClick={onReceiveShielded}
-                disabled={!deployed || !providers || !mintedShieldedCoin || isLoading}
+                onClick={onDepositShielded}
+                disabled={!deployed || !providers || !shieldedColor || isLoading}
                 className="btn btn-accent btn-block"
               >
-                {isLoading ? 'Processing...' : 'Deposit Shielded Tokens'}
+                {isLoading ? 'Processing...' : 'Deposit Shielded'}
               </button>
             </div>
           </div>
