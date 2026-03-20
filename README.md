@@ -38,6 +38,7 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 | `yarn lint:fix`      | Run ESLint with auto-fix                |
 | `yarn format`        | Format code with Prettier               |
 | `yarn format:check`  | Check code formatting                   |
+| `yarn changelog`     | Generate changelog from commit history  |
 | `yarn clean`         | Remove dist, node_modules, and caches   |
 
 ## Project Structure
@@ -134,11 +135,11 @@ yarn env:down    # Stop services
 
 ### Services
 
-| Service          | Port |
-| ---------------- | ---- |
-| Proof Server     | 6300 |
-| Indexer          | 8088 |
-| Midnight Node    | 9944 |
+| Service       | Port |
+| ------------- | ---- |
+| Proof Server  | 6300 |
+| Indexer       | 8088 |
+| Midnight Node | 9944 |
 
 ### Prefunded wallet seed
 
@@ -170,13 +171,13 @@ This dApp is itself a test harness — wallet developers run it to exercise thei
 
 ## Troubleshooting
 
-| Problem | Solution |
-| ------- | -------- |
-| Wallet not detected | Ensure the Lace (Midnight edition) extension is installed, unlocked, and the page is refreshed. |
-| WASM-related build errors | Run `yarn clean && yarn install` to clear caches and reinstall dependencies. |
-| Contract compilation fails | Verify `COMPACTC_VERSION` is set (see `.envrc`) and run `yarn compact`. |
-| Local environment won't start | Ensure Docker is running and ports 6300, 8088, 9944 are not in use. |
-| Transaction errors | Check the Activity Log for details. Ensure the wallet is connected to the correct network. |
+| Problem                       | Solution                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| Wallet not detected           | Ensure the Lace (Midnight edition) extension is installed, unlocked, and the page is refreshed. |
+| WASM-related build errors     | Run `yarn clean && yarn install` to clear caches and reinstall dependencies.                    |
+| Contract compilation fails    | Verify `COMPACTC_VERSION` is set (see `.envrc`) and run `yarn compact`.                         |
+| Local environment won't start | Ensure Docker is running and ports 6300, 8088, 9944 are not in use.                             |
+| Transaction errors            | Check the Activity Log for details. Ensure the wallet is connected to the correct network.      |
 
 ## Security
 
