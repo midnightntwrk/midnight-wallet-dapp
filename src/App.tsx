@@ -45,6 +45,7 @@ export default function App() {
   const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
+  const [customNetworkId, setCustomNetworkId] = useState<string>('');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
 
   const [deployed, setDeployed] = useState<FoundContract<DemoContract> | null>(null);
@@ -64,13 +65,15 @@ export default function App() {
   const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
   const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
 
+  const effectiveNetworkId = networkId === 'custom' ? customNetworkId : networkId;
+
   useEffect(() => {
     try {
-      setGlobalNetworkId(networkId as NetworkId);
+      setGlobalNetworkId(effectiveNetworkId as NetworkId);
     } catch {
       // Ignore invalid values
     }
-  }, [networkId]);
+  }, [effectiveNetworkId]);
 
   async function onConnectWallet() {
     if (availableAPIs.length === 0) {
@@ -83,18 +86,24 @@ export default function App() {
 
     try {
       try {
-        setGlobalNetworkId(networkId as NetworkId);
+        setGlobalNetworkId(effectiveNetworkId as NetworkId);
       } catch {
         // ignore
       }
 
-      const connected = await initialAPI.connect(networkId);
+      const connected = await initialAPI.connect(effectiveNetworkId);
       setConnectedAPI(connected);
       appendLog('Wallet connected successfully');
 
       const config = await connected.getConfiguration();
       try {
-        setNetworkIdState(config.networkId);
+        const presetNetworks = ['undeployed', 'preview', 'qanet'];
+        if (presetNetworks.includes(config.networkId)) {
+          setNetworkIdState(config.networkId);
+        } else {
+          setNetworkIdState('custom');
+          setCustomNetworkId(config.networkId);
+        }
         setGlobalNetworkId(config.networkId as NetworkId);
       } catch {
         // Fall back to UI state
@@ -427,7 +436,7 @@ export default function App() {
             </div>
             {connectedAPI && (
               <div className="network-info">
-                <span className="info-label">Network:</span> {networkId}
+                <span className="info-label">Network:</span> {effectiveNetworkId}
                 {availableAPIs[selectedWalletIndex] && (
                   <>
                     <span className="separator">|</span>
@@ -457,24 +466,44 @@ export default function App() {
                 )}
                 <select
                   id="networkSelect"
-                  value={networkId}
-                  onChange={(e) => setNetworkIdState(e.target.value)}
+                  value={networkId === 'custom' ? 'custom' : networkId}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'custom') {
+                      setNetworkIdState('custom');
+                    } else {
+                      setNetworkIdState(value);
+                      setCustomNetworkId('');
+                    }
+                  }}
                   className="input"
                   disabled={!!connectedAPI}
                   style={{ maxWidth: '150px' }}
                 >
                   <option value="undeployed">Undeployed</option>
-                  <option value="preview">Preview</option>
                   <option value="qanet">QANet</option>
-                  <option value="badNetwork">Bad Network</option>
+                  <option value="preview">Preview</option>
+                  <option value="preprod">PreProd</option>
+                  <option value="custom">Custom</option>
                 </select>
+                {networkId === 'custom' && (
+                  <input
+                    type="text"
+                    value={customNetworkId}
+                    onChange={(e) => setCustomNetworkId(e.target.value)}
+                    className="input"
+                    placeholder="Enter network ID..."
+                    disabled={!!connectedAPI}
+                    style={{ maxWidth: '200px' }}
+                  />
+                )}
                 <button onClick={onConnectWallet} disabled={availableAPIs.length === 0} className="btn btn-primary">
                   {availableAPIs.length > 0 ? 'Connect Wallet' : 'No Wallet Detected'}
                 </button>
               </>
             ) : (
               <>
-                {networkId === 'preview' && (
+                {effectiveNetworkId === 'preview' && (
                   <a
                     href="https://faucet.preview.midnight.network/"
                     target="_blank"
@@ -485,7 +514,7 @@ export default function App() {
                     Go to Faucet
                   </a>
                 )}
-                {networkId === 'qanet' && (
+                {effectiveNetworkId === 'qanet' && (
                   <a
                     href="https://faucet.qanet.midnight.network/"
                     target="_blank"
