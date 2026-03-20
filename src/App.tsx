@@ -503,20 +503,11 @@ export default function App() {
               </>
             ) : (
               <>
-                {effectiveNetworkId === 'preview' && (
+                {(['preview', 'qanet', 'preprod'] as const).includes(
+                  effectiveNetworkId as 'preview' | 'qanet' | 'preprod'
+                ) && (
                   <a
-                    href="https://faucet.preview.midnight.network/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-accent"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    Go to Faucet
-                  </a>
-                )}
-                {effectiveNetworkId === 'qanet' && (
-                  <a
-                    href="https://faucet.qanet.midnight.network/"
+                    href={`https://faucet.${effectiveNetworkId}.midnight.network/`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-accent"
