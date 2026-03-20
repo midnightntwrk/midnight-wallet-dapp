@@ -503,7 +503,9 @@ export default function App() {
               </>
             ) : (
               <>
-                {(['preview', 'qanet', 'preprod'] as const).includes(effectiveNetworkId as 'preview' | 'qanet' | 'preprod') && (
+                {(['preview', 'qanet', 'preprod'] as const).includes(
+                  effectiveNetworkId as 'preview' | 'qanet' | 'preprod'
+                ) && (
                   <a
                     href={`https://faucet.${effectiveNetworkId}.midnight.network/`}
                     target="_blank"
