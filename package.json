@@ -1,8 +1,8 @@
 {
   "name": "@midnight-ntwrk/midnight-wallet-dapp",
   "description": "Midnight Wallet Dapp demonstration application",
-  "repository": "git@github.com:midnight-ntwrk/artifacts",
-  "version": "0.2.0",
+  "repository": "git@github.com:midnight-ntwrk/midnight-wallet-dapp",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "changelog": "conventional-changelog -p conventionalcommits -i CHANGELOG.md -s",
+    "release": "sh scripts/release.sh",
     "prepare": "husky"
   },
   "dependencies": {
@@ -62,6 +64,7 @@
     "@typescript-eslint/parser": "^8.22.0",
     "@vitejs/plugin-react": "^5.1.0",
     "buffer": "^6.0.3",
+    "conventional-changelog-cli": "5.0.0",
     "crypto-browserify": "^3.12.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",

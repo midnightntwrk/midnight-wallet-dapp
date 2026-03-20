@@ -4,3 +4,4 @@ src/contractcompiled
 *.json
 yarn.lock
 .github
+*.md

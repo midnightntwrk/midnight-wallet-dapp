@@ -44,6 +44,7 @@ header:
     - '.eslintignore'
     - '.prettierignore'
     - '.nvmrc'
+    - '**/*.sh'
     - '.editorconfig'
     - '**/*.d.ts'
     - '**/generated/**'

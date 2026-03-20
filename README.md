@@ -4,12 +4,12 @@ A minimal React + Vite starter template for building decentralized applications 
 
 ## Prerequisites
 
-- **Node.js** 22+
+- **Node.js** 22+ (see `.nvmrc`)
 - **Yarn** (configured via `.yarnrc.yml`)
 - **Lace Wallet** (Midnight edition) installed and unlocked in your browser
-- Access to a Midnight test environment (preview, preprod, or local)
+- Access to a Midnight test environment (QANet, Preview, PreProd, or local)
 - Optional: Docker for containerized deployment
-- COMPACTC_VERSION env var for contract compilation
+- Optional: `COMPACTC_VERSION` env var for contract compilation (set via `.envrc`)
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 | Script               | Description                             |
 | -------------------- | --------------------------------------- |
 | `yarn dev`           | Start development server (port 5173)    |
-| `yarn build`         | Build for production                    |
+| `yarn build`         | Type-check and build for production     |
 | `yarn preview`       | Preview production build                |
 | `yarn compact`       | Compile Compact contracts               |
 | `yarn contract-demo` | Generate contract build artifacts       |
@@ -38,32 +38,42 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 | `yarn lint:fix`      | Run ESLint with auto-fix                |
 | `yarn format`        | Format code with Prettier               |
 | `yarn format:check`  | Check code formatting                   |
+| `yarn changelog`     | Generate changelog from commit history  |
+| `yarn clean`         | Remove dist, node_modules, and caches   |
 
 ## Project Structure
 
 ```
 src/
-├── App.tsx                 # Main React component with wallet/contract logic
-├── main.tsx                # Application entry point
-├── styles.css              # Global styles (dark theme)
-├── polyfills.ts            # Node.js polyfills for browser
+├── App.tsx                     # Main React component with wallet/contract logic
+├── main.tsx                    # Application entry point
+├── styles.css                  # Global styles (dark theme)
+├── polyfills.ts                # Node.js polyfills for browser
+├── global.d.ts                 # Global type definitions
+├── hooks/
+│   ├── useWalletDetection.ts   # Wallet auto-detection hook
+│   └── useActivityLog.ts       # Activity log management hook
+├── utils/
+│   └── errors.ts               # Error message extraction utility
 ├── lib/
-│   ├── providers.ts        # MidnightJS provider factory
-│   ├── walletAdapter.ts    # Wallet DApp connector adapter
-│   ├── faucet.ts           # Faucet token transfer utilities
-│   └── types.ts            # Contract type definitions
+│   ├── providers.ts            # MidnightJS provider factory
+│   ├── walletAdapter.ts        # Wallet DApp connector adapter
+│   ├── types.ts                # Contract type definitions
+│   └── crypto-shim.ts          # Crypto module shimming for browser
 └── contract/
-    ├── contracts/          # Compact contract source (.compact)
-    └── build/              # Compiled artifacts (keys, zkir, modules)
+    ├── contracts/               # Compact contract source (.compact)
+    ├── compiled/                # Compiled artifacts (keys, zkir, modules)
+    └── index.ts                 # Contract import wrapper
 ```
 
 ## Technology Stack
 
-- **React 19** + **Vite 7** + **TypeScript 5.9**
-- **MidnightJS** libraries for blockchain interaction
+- **React 19** + **Vite 7** + **TypeScript 5.9** (strict mode)
+- **MidnightJS** libraries (v4.0.0-rc.2) for blockchain interaction
 - **Apollo Client** for GraphQL subscriptions
 - **RxJS** for reactive streams
 - **Level** (IndexedDB) for private state storage
+- **Playwright** for e2e testing
 
 ## Architecture
 
@@ -72,72 +82,102 @@ The app integrates with Midnight through these provider layers:
 | Provider                    | Purpose                                                      |
 | --------------------------- | ------------------------------------------------------------ |
 | `levelPrivateStateProvider` | IndexedDB-backed storage for private states and signing keys |
-| `indexerPublicDataProvider` | GraphQL Indexer client for blockchain data                   |
+| `indexerPublicDataProvider` | GraphQL indexer client for blockchain data                   |
 | `FetchZkConfigProvider`     | Fetches ZK keys and zkIR from the node                       |
 | `httpClientProofProvider`   | HTTP client to the proof server                              |
 | Wallet Adapter              | DApp connector for key management and transaction submission |
 
-The wallet connector is expected at `window.midnight.lace` and must support `enable`, `getServiceURIs`, `balanceTransaction`, `submitTransaction`.
+The wallet connector is expected at `window.midnight.lace` and must support API version 4.x with `enable`, `getServiceURIs`, `balanceTransaction`, and `submitTransaction`.
 
 ## Features
 
-- **Wallet Connection**: Auto-detects Midnight wallet APIs, supports multiple networks
-- **Contract Deployment**: Deploy the token-transfers Compact contract
-- **Token Operations**:
+- **Wallet Connection**: Auto-detects Midnight wallet APIs, multi-wallet dropdown selector
+- **Network Selection**: QANet, Preview, PreProd, or custom network configuration
+- **Contract Deployment**: Deploy or join an existing token-transfers Compact contract
+- **Unshielded Token Operations**:
   - Mint tokens with unique color identifier
   - Claim minted tokens to wallet address
-  - Deposit/withdraw unshielded tokens
-  - Deposit/withdraw NIGHT tokens
+  - Deposit/receive unshielded tokens
+- **Shielded Token Operations**:
+  - Mint and claim shielded tokens
+  - Deposit shielded tokens with nonce, color, and value
+- **NIGHT Token Operations**:
+  - Deposit NIGHT tokens (1,000,000 STAR = 1 NIGHT)
+  - Withdraw NIGHT tokens to address
+- **Faucet Link**: Direct link to request test tokens on supported networks
 - **Activity Log**: Real-time transaction monitoring with timestamps
 
 ## Docker Deployment
 
-**Build and run:**
+Build and run:
 
 ```bash
-docker build -t midnight-lace-dapp .
-docker run -p 8080:8080 midnight-lace-dapp
+yarn build:docker
+docker run -p 8080:8080 midnight-wallet-dapp
 ```
 
-**Or via Docker Compose:**
+Or via Docker Compose:
 
 ```bash
 yarn dapp:docker
 ```
 
-Access at http://localhost:8080
+Access at http://localhost:8080.
 
 ## Local Blockchain Environment
 
-### Start a complete local environment with proof-server, indexer, and midnight-node:
+Start a complete local environment with proof-server, indexer, and midnight-node:
 
 ```bash
 yarn env:up      # Start services
 yarn env:down    # Stop services
 ```
 
-### Services:
+### Services
 
-- **Proof Server**: port 6300
-- **Indexer**: port 8088
-- **Midnight Node**: port 9944
+| Service       | Port |
+| ------------- | ---- |
+| Proof Server  | 6300 |
+| Indexer       | 8088 |
+| Midnight Node | 9944 |
 
-### Prefund wallet seed:
+### Prefunded wallet seed
 
+```
 abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon diesel
+```
 
 ## Development
 
+### Code quality
+
 Pre-push hooks are configured via Husky to run:
 
-- `yarn lint` - ESLint checks
-- `yarn tsc --noEmit` - TypeScript type checking
+- `yarn lint` — ESLint checks
+- `yarn tsc --noEmit` — TypeScript type checking
 
 Hooks are automatically installed when running `yarn install`.
+
+### Code formatting
+
+```bash
+yarn format         # Auto-format with Prettier
+yarn format:check   # Verify formatting without changes
+```
 
 ## Testing
 
 This dApp is itself a test harness — wallet developers run it to exercise their wallet implementation against real contract operations (deploy, mint, claim, deposit, withdraw). The included `yarn test:e2e` Playwright smoke test verifies the app builds and loads correctly, but the meaningful testing happens interactively through the UI with a connected wallet.
+
+## Troubleshooting
+
+| Problem                       | Solution                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| Wallet not detected           | Ensure the Lace (Midnight edition) extension is installed, unlocked, and the page is refreshed. |
+| WASM-related build errors     | Run `yarn clean && yarn install` to clear caches and reinstall dependencies.                    |
+| Contract compilation fails    | Verify `COMPACTC_VERSION` is set (see `.envrc`) and run `yarn compact`.                         |
+| Local environment won't start | Ensure Docker is running and ports 6300, 8088, 9944 are not in use.                             |
+| Transaction errors            | Check the Activity Log for details. Ensure the wallet is connected to the correct network.      |
 
 ## Security
 
@@ -147,4 +187,4 @@ This dApp is itself a test harness — wallet developers run it to exercise thei
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE) for details.
