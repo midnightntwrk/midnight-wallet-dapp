@@ -65,7 +65,9 @@ export async function buildProvidersFromConnectedAPI(
     },
   };
 
-  const proofProvider = httpClientProofProvider(config.proverServerUri!, zkConfigProvider);
+  const isLocalDev = window.location.hostname === 'localhost';
+  const proofServerUri = isLocalDev ? `${window.location.origin}/proof-server` : config.proverServerUri!;
+  const proofProvider = httpClientProofProvider(proofServerUri, zkConfigProvider);
 
   // TODO: not implemented in dapp-connector yet
   // const provingProvider = await connectedAPI.getProvingProvider(zkConfigProvider.asKeyMaterialProvider());
