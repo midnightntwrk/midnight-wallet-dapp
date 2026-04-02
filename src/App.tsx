@@ -19,10 +19,10 @@ import {
   findDeployedContract,
   type FoundContract,
   submitCallTx,
-} from '@midnight-ntwrk/midnight-js-contracts';
+} from '@midnight-ntwrk/midnight-js/contracts';
+import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
-import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { bech32m } from 'bech32';
 
 import { useActivityLog } from './hooks/useActivityLog';

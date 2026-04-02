@@ -26,7 +26,7 @@ import {
   type BlockHeightConfig,
   ProofProvider,
   UnboundTransaction,
-} from '@midnight-ntwrk/midnight-js-types';
+} from '@midnight-ntwrk/midnight-js/types';
 import { type ContractAddress, CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {

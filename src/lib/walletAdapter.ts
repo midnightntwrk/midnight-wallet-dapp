@@ -18,7 +18,7 @@ import {
   UnboundTransaction,
   WalletProvider,
   type ZKConfigProvider,
-} from '@midnight-ntwrk/midnight-js-types';
+} from '@midnight-ntwrk/midnight-js/types';
 import {
   Binding,
   CoinPublicKey,
