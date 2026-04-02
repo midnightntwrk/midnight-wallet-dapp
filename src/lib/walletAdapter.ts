@@ -13,7 +13,12 @@
  * limitations under the License.
  */
 
-import { ProofProvider, UnboundTransaction, WalletProvider, type ZKConfigProvider } from '@midnight-ntwrk/midnight-js/types';
+import {
+  ProofProvider,
+  UnboundTransaction,
+  WalletProvider,
+  type ZKConfigProvider,
+} from '@midnight-ntwrk/midnight-js/types';
 import {
   Binding,
   CoinPublicKey,

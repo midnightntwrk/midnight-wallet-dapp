@@ -21,7 +21,12 @@ import type { ConnectedAPI, ProvingProvider } from '@midnight-ntwrk/dapp-connect
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits, DemoProviders } from './types';
-import { type BlockHashConfig, type BlockHeightConfig, ProofProvider, UnboundTransaction } from '@midnight-ntwrk/midnight-js/types';
+import {
+  type BlockHashConfig,
+  type BlockHeightConfig,
+  ProofProvider,
+  UnboundTransaction,
+} from '@midnight-ntwrk/midnight-js/types';
 import { type ContractAddress, CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {
