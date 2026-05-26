@@ -1,6 +1,6 @@
 dist/
 node_modules/
-src/contractcompiled
+src/contract/compiled/
 *.json
 yarn.lock
 .github
