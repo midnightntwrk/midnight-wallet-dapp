@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) Midnight Foundation
+ * Copyright (C) 2025-2026 Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -13,4 +13,15 @@
  * limitations under the License.
  */
 
-export * from './compiled/token-transfers/contract/index.js';
+import type { Buffer as BufferType } from 'buffer';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var Buffer: typeof BufferType;
+  // eslint-disable-next-line no-var
+  var process: typeof import('process');
+  // eslint-disable-next-line no-var
+  var global: typeof globalThis;
+}
+
+export {};

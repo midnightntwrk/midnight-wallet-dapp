@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) Midnight Foundation
+ * Copyright (C) 2025-2026 Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -13,4 +13,24 @@
  * limitations under the License.
  */
 
-export * from './compiled/token-transfers/contract/index.js';
+import { useState, useCallback } from 'react';
+
+export interface UseActivityLogReturn {
+  logs: string[];
+  appendLog: (msg: string) => void;
+  clearLogs: () => void;
+}
+
+export function useActivityLog(): UseActivityLogReturn {
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const appendLog = useCallback((msg: string) => {
+    setLogs((prev) => [new Date().toLocaleTimeString() + ': ' + msg, ...prev]);
+  }, []);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
+
+  return { logs, appendLog, clearLogs };
+}

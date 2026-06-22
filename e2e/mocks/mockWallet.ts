@@ -22,6 +22,7 @@ interface MockConnectedAPI {
     substrateNodeUri: string;
   }>;
   getShieldedAddresses: () => Promise<{
+    shieldedAddress: string;
     shieldedCoinPublicKey: string;
     shieldedEncryptionPublicKey: string;
   }>;
@@ -55,6 +56,7 @@ export function createMockWallet(): MockInitialAPI {
           substrateNodeUri: 'http://localhost:9944',
         }),
         getShieldedAddresses: async () => ({
+          shieldedAddress: 'mock_shielded_address_' + '00'.repeat(16),
           shieldedCoinPublicKey: '0x' + '00'.repeat(32),
           shieldedEncryptionPublicKey: '0x' + '00'.repeat(32),
         }),
@@ -63,10 +65,10 @@ export function createMockWallet(): MockInitialAPI {
             'addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgs68faae',
         }),
         getShieldedBalances: async () => ({
-          tNIGHT: 1000000n,
+          tSTAR: 1000000n,
         }),
         getUnshieldedBalances: async () => ({
-          tNIGHT: 500000n,
+          tUnit: 500000n,
         }),
         getDustBalance: async () => ({
           balance: 100000n,
@@ -95,6 +97,7 @@ export function injectMockWalletScript(): string {
           substrateNodeUri: 'http://localhost:9944',
         }),
         getShieldedAddresses: async () => ({
+          shieldedAddress: 'mock_shielded_address_' + '00'.repeat(16),
           shieldedCoinPublicKey: '0x' + '00'.repeat(32),
           shieldedEncryptionPublicKey: '0x' + '00'.repeat(32),
         }),
@@ -102,10 +105,10 @@ export function injectMockWalletScript(): string {
           unshieldedAddress: 'addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgs68faae',
         }),
         getShieldedBalances: async () => ({
-          tNIGHT: 1000000n,
+          tSTAR: 1000000n,
         }),
         getUnshieldedBalances: async () => ({
-          tNIGHT: 500000n,
+          tUnit: 500000n,
         }),
         getDustBalance: async () => ({
           balance: 100000n,

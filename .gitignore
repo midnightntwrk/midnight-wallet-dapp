@@ -150,3 +150,7 @@ playwright-report/
 .vite
 
 .idea
+
+.claude
+.worktrees
+.gitnexus

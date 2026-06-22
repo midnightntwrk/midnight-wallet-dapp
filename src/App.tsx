@@ -14,10 +14,21 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { deployContract, type DeployedContract, submitCallTx } from '@midnight-ntwrk/midnight-js-contracts';
+import {
+  deployContract,
+  findDeployedContract,
+  type FoundContract,
+  submitCallTx,
+} from '@midnight-ntwrk/midnight-js/contracts';
+import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
-import type { InitialAPI, ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
-import './styles.css';
+import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import { bech32m } from 'bech32';
+
+import { useActivityLog } from './hooks/useActivityLog';
+import { useWalletDetection } from './hooks/useWalletDetection';
+import { getErrorMessage } from './utils/errors';
+
 import {
   CompiledDemoContract,
   createSimpleContractInstance,
@@ -25,88 +36,44 @@ import {
   DemoContract,
   DemoProviders,
 } from './lib/types';
-import { transferUnshieldedFromFaucet } from './lib/faucet';
-import { bech32m } from 'bech32';
-import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import * as CompiledContract from './contract/index.js';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MidnightWindow = Window & { midnight?: Record<string, any>; cardano?: unknown };
-
-function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
-
-function findInitialAPIs(): InitialAPI[] {
-  const midnight = (window as MidnightWindow).midnight;
-  if (!midnight) return [];
-
-  const apis: InitialAPI[] = [];
-  for (const key of Object.keys(midnight)) {
-    const candidate = midnight[key];
-    if (
-      candidate &&
-      typeof candidate === 'object' &&
-      typeof candidate.name === 'string' &&
-      typeof candidate.icon === 'string' &&
-      typeof candidate.apiVersion === 'string' &&
-      typeof candidate.connect === 'function'
-    ) {
-      apis.push(candidate as InitialAPI);
-    }
-  }
-  return apis;
-}
+import './styles.css';
 
 export default function App() {
-  const [availableAPIs, setAvailableAPIs] = useState<InitialAPI[]>([]);
+  const { logs, appendLog } = useActivityLog();
+  const { availableAPIs } = useWalletDetection(appendLog);
+
+  const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
+  const [customNetworkId, setCustomNetworkId] = useState<string>('');
   const [providers, setProviders] = useState<DemoProviders | null>(null);
 
-  const [deployed, setDeployed] = useState<DeployedContract<CompiledContract.Contract> | null>(null);
+  const [deployed, setDeployed] = useState<FoundContract<DemoContract> | null>(null);
   const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
+  const [joinAddress, setJoinAddress] = useState<string>('');
 
-  const [mintAmount, setMintAmount] = useState<string>('1000');
-  const [claimAmount, setClaimAmount] = useState<string>('500');
-  const [receiveAmount, setReceiveAmount] = useState<string>('100');
-  const [depositNightAmount, setDepositNightAmount] = useState<string>('50');
-  const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('25');
+  const [mintAmount, setMintAmount] = useState<string>('10000');
+  const [claimAmount, setClaimAmount] = useState<string>('6000');
+  const [receiveAmount, setReceiveAmount] = useState<string>('1500');
+  const [depositNightAmount, setDepositNightAmount] = useState<string>('5000');
+  const [withdrawNightAmount, setWithdrawNightAmount] = useState<string>('2501');
   const [mintedColor, setMintedColor] = useState<string>('');
-  const [txLog, setTxLog] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const appendLog = (msg: string) => setTxLog((prev) => [new Date().toLocaleTimeString() + ': ' + msg, ...prev]);
 
-  // Important: MidnightJS has a *global* network-id that must match the wallet/network.
-  // If this is left at the default (often `undeployed`), transactions can be built for the
-  // wrong network and Lace will fail when balancing/submitting.
+  const [shieldedMintAmount, setShieldedMintAmount] = useState<string>('10000');
+  const [shieldedClaimAmount, setShieldedSendAmount] = useState<string>('6000');
+  const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
+  const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
+
+  const effectiveNetworkId = networkId === 'custom' ? customNetworkId : networkId;
+
   useEffect(() => {
     try {
-      setGlobalNetworkId(networkId as NetworkId);
+      setGlobalNetworkId(effectiveNetworkId as NetworkId);
     } catch {
-      // Ignore invalid values; the user may be mid-selection or running against older libs.
+      // Ignore invalid values
     }
-  }, [networkId]);
-
-  useEffect(() => {
-    const w = window as MidnightWindow;
-    appendLog('window.cardano=' + (typeof w.cardano !== 'undefined'));
-    appendLog('window.midnight=' + (typeof w.midnight !== 'undefined'));
-
-    let tries = 0;
-    const iv = setInterval(() => {
-      const apis = findInitialAPIs();
-      if (apis.length > 0) {
-        clearInterval(iv);
-        setAvailableAPIs(apis);
-        appendLog(`Found ${apis.length} wallet API(s): ${apis.map((a) => a.name).join(', ')}`);
-      } else if (++tries > 40) {
-        clearInterval(iv);
-        appendLog('No Midnight wallet detected after polling');
-      }
-    }, 500);
-    return () => clearInterval(iv);
-  }, []);
+  }, [effectiveNetworkId]);
 
   async function onConnectWallet() {
     if (availableAPIs.length === 0) {
@@ -114,40 +81,40 @@ export default function App() {
       return;
     }
 
-    const initialAPI = availableAPIs[0];
+    const initialAPI = availableAPIs[selectedWalletIndex];
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
-      // Ensure MidnightJS global network id matches what we're asking the wallet for.
-      // (Some SDK components use this global when serializing transactions.)
       try {
-        setGlobalNetworkId(networkId as NetworkId);
+        setGlobalNetworkId(effectiveNetworkId as NetworkId);
       } catch {
         // ignore
       }
 
-      const connected = await initialAPI.connect(networkId);
+      const connected = await initialAPI.connect(effectiveNetworkId);
       setConnectedAPI(connected);
       appendLog('Wallet connected successfully');
 
       const config = await connected.getConfiguration();
-      // Prefer the network id returned by the wallet config (source of truth)
-      // and keep MidnightJS global network id aligned.
       try {
-        setNetworkIdState(config.networkId);
+        const presetNetworks = ['undeployed', 'preview', 'qanet'];
+        if (presetNetworks.includes(config.networkId)) {
+          setNetworkIdState(config.networkId);
+        } else {
+          setNetworkIdState('custom');
+          setCustomNetworkId(config.networkId);
+        }
         setGlobalNetworkId(config.networkId as NetworkId);
       } catch {
-        // Fall back to UI state if the wallet returns an unexpected value.
+        // Fall back to UI state
       }
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
 
-      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'unshielded-demo');
-
+      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'token-transfers');
       setProviders(demoCircuitsMidnightProviders);
       appendLog('Providers initialized for Mint Contract');
 
-      // Get and log wallet balances
       try {
         const shieldedBalances = await connected.getShieldedBalances();
         const unshieldedBalances = await connected.getUnshieldedBalances();
@@ -175,60 +142,43 @@ export default function App() {
     appendLog('Disconnected');
   }
 
-  async function onRequestDustFromFaucet() {
-    if (!connectedAPI || !providers) return alert('Connect wallet first');
-
-    setIsLoading(true);
-    try {
-      appendLog('Requesting tokens from faucet...');
-
-      const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
-      appendLog(`Your Unshielded Address: ${unshieldedAddress.unshieldedAddress}`);
-
-      const config = await connectedAPI.getConfiguration();
-      appendLog('Transferring 1,000,000 STAR (1 NIGHT) from faucet...');
-
-      const txHash = await transferUnshieldedFromFaucet(
-        unshieldedAddress.unshieldedAddress,
-        1_000_000n,
-        config.indexerUri,
-        config.indexerWsUri,
-        config.proverServerUri!,
-        config.substrateNodeUri.replace('http://', 'ws://').replace('https://', 'wss://')
-      );
-
-      appendLog(`Transfer successful! TX Hash: ${txHash}`);
-      appendLog('Waiting for transaction to be processed...');
-
-      // Wait for indexer to process
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      // Refresh dust balance (dust is generated from Night balance)
-      const dust = await connectedAPI.getDustBalance();
-      appendLog(`Updated Dust Balance: ${dust.balance.toString()} / ${dust.cap.toString()}`);
-      appendLog('Faucet transfer complete! You now have Night tokens and dust.');
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error transferring from faucet: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function onDeploy() {
     if (!providers) return alert('Connect wallet first');
 
     setIsLoading(true);
     try {
       const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployed = await deployContract(providers, { compiledContract: CompiledDemoContract });
-      setDeployed(deployed);
+      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
+      setDeployed(deployedContract);
       setContractInstance(demoContractInstance);
-      appendLog('Deployed Mint Contract at ' + deployed.deployTxData.public.contractAddress);
+      appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error deploying contract: ' + getErrorMessage(e));
       alert('Failed to deploy contract: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onJoinContract() {
+    if (!providers) return alert('Connect wallet first');
+    if (!joinAddress.trim()) return alert('Enter a contract address');
+
+    setIsLoading(true);
+    try {
+      const demoContractInstance: DemoContract = createSimpleContractInstance();
+      const foundContract = await findDeployedContract(providers, {
+        compiledContract: CompiledDemoContract,
+        contractAddress: joinAddress.trim(),
+      });
+      setDeployed(foundContract);
+      setContractInstance(demoContractInstance);
+      appendLog('Joined contract at ' + foundContract.deployTxData.public.contractAddress);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error joining contract: ' + getErrorMessage(e));
+      alert('Failed to join contract: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -274,7 +224,6 @@ export default function App() {
 
       appendLog(`Unshielded address: ${address.unshieldedAddress}`);
 
-      // Decode bech32m address to get raw bytes
       const decoded = bech32m.decode(address.unshieldedAddress, 1000);
       const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
 
@@ -313,10 +262,9 @@ export default function App() {
       await submitCallTx(providers!, callTxOptions);
       appendLog(`Received ${receiveAmount} tokens`);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error receiving tokens: ' + errorMessage);
-      alert('Failed to receive tokens: ' + errorMessage);
+      appendLog('Error receiving tokens: ' + getErrorMessage(e));
+      alert('Failed to receive tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -337,10 +285,9 @@ export default function App() {
       await submitCallTx(providers!, callTxOptions);
       appendLog(`Deposited ${depositNightAmount} STAR (${Number(depositNightAmount) / 1_000_000} NIGHT)`);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error depositing NIGHT tokens: ' + errorMessage);
-      alert('Failed to deposit NIGHT tokens: ' + errorMessage);
+      appendLog('Error depositing NIGHT tokens: ' + getErrorMessage(e));
+      alert('Failed to deposit NIGHT tokens: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -374,10 +321,97 @@ export default function App() {
         `Withdrew ${withdrawNightAmount} STAR (${Number(withdrawNightAmount) / 1_000_000} NIGHT) to ${address.unshieldedAddress}`
       );
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(e);
-      appendLog('Error withdrawing NIGHT tokens: ' + errorMessage);
-      alert('Failed to withdraw NIGHT tokens: ' + errorMessage);
+      appendLog('Error withdrawing NIGHT tokens: ' + getErrorMessage(e));
+      alert('Failed to withdraw NIGHT tokens: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onDepositShielded() {
+    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!shieldedColor) return alert('Mint & claim shielded tokens first to obtain a color');
+
+    setIsLoading(true);
+    try {
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
+
+      const coin = {
+        nonce,
+        color: shieldedColor,
+        value: BigInt(shieldedDepositAmount),
+      };
+
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'receiveShieldedTokens' as DemoCircuits,
+        args: [coin] as [{ nonce: Uint8Array; color: Uint8Array; value: bigint }],
+      };
+
+      await submitCallTx(providers!, callTxOptions);
+      appendLog(`Deposited ${shieldedDepositAmount} shielded tokens`);
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error depositing shielded tokens: ' + getErrorMessage(e));
+      alert('Failed to deposit shielded tokens: ' + getErrorMessage(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onMintAndClaimShielded() {
+    if (!deployed || !contractInstance) return alert('Deploy contract first');
+
+    setIsLoading(true);
+    try {
+      const shieldedAddress = await connectedAPI?.getShieldedAddresses();
+      if (!shieldedAddress?.shieldedCoinPublicKey) {
+        return alert('No shielded coin public key available');
+      }
+
+      const publicKeyBytes = new Uint8Array(
+        shieldedAddress.shieldedCoinPublicKey.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
+      );
+
+      const domainSep = crypto.getRandomValues(new Uint8Array(32));
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
+
+      const callTxOptions = {
+        compiledContract: CompiledDemoContract,
+        contractAddress: deployed.deployTxData.public.contractAddress,
+        circuitId: 'mintAndSendShielded' as DemoCircuits,
+        args: [
+          domainSep,
+          BigInt(shieldedMintAmount),
+          nonce,
+          { bytes: publicKeyBytes },
+          BigInt(shieldedClaimAmount),
+        ] as [Uint8Array, bigint, Uint8Array, { bytes: Uint8Array }, bigint],
+      };
+
+      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const result = callTxData.private.result as {
+        change: { is_some: boolean; value: { nonce: Uint8Array; color: Uint8Array; value: bigint } };
+        sent: { nonce: Uint8Array; color: Uint8Array; value: bigint };
+      };
+
+      setShieldedColor(result.sent.color);
+      const colorHex = Array.from(result.sent.color)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      appendLog(
+        `Minted ${shieldedMintAmount} and claimed ${shieldedClaimAmount} shielded tokens (color: 0x${colorHex})`
+      );
+      appendLog(`  Claimed coin value: ${result.sent.value}`);
+      if (result.change.is_some) {
+        appendLog(`  Change coin value: ${result.change.value.value}`);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      appendLog('Error in mint & claim shielded: ' + getErrorMessage(e));
+      alert('Failed to mint & claim shielded: ' + getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -387,12 +421,13 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1>🌙 Midnight dApp</h1>
+          <h1>Midnight Wallet dApp</h1>
           <p className="subtitle">Tokens operations</p>
         </div>
       </header>
 
       <main className="container">
+        {/* Wallet Connection Section */}
         <section className="wallet-section">
           <div className="wallet-info">
             <div className="status-badge" data-connected={!!connectedAPI}>
@@ -401,11 +436,11 @@ export default function App() {
             </div>
             {connectedAPI && (
               <div className="network-info">
-                <span className="info-label">Network:</span> {networkId}
-                {availableAPIs[0] && (
+                <span className="info-label">Network:</span> {effectiveNetworkId}
+                {availableAPIs[selectedWalletIndex] && (
                   <>
-                    <span className="separator">•</span>
-                    <span className="info-label">Wallet:</span> {availableAPIs[0].name}
+                    <span className="separator">|</span>
+                    <span className="info-label">Wallet:</span> {availableAPIs[selectedWalletIndex].name}
                   </>
                 )}
               </div>
@@ -414,43 +449,65 @@ export default function App() {
           <div className="wallet-actions">
             {!connectedAPI ? (
               <>
+                {availableAPIs.length > 1 && (
+                  <select
+                    id="walletSelect"
+                    value={selectedWalletIndex}
+                    onChange={(e) => setSelectedWalletIndex(Number(e.target.value))}
+                    className="input"
+                    style={{ maxWidth: '200px' }}
+                  >
+                    {availableAPIs.map((api, index) => (
+                      <option key={api.name} value={index}>
+                        {api.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   id="networkSelect"
-                  value={networkId}
-                  onChange={(e) => setNetworkIdState(e.target.value)}
+                  value={networkId === 'custom' ? 'custom' : networkId}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'custom') {
+                      setNetworkIdState('custom');
+                    } else {
+                      setNetworkIdState(value);
+                      setCustomNetworkId('');
+                    }
+                  }}
                   className="input"
                   disabled={!!connectedAPI}
                   style={{ maxWidth: '150px' }}
                 >
                   <option value="undeployed">Undeployed</option>
-                  <option value="preview">Preview</option>
                   <option value="qanet">QANet</option>
+                  <option value="preview">Preview</option>
+                  <option value="preprod">PreProd</option>
+                  <option value="custom">Custom</option>
                 </select>
+                {networkId === 'custom' && (
+                  <input
+                    type="text"
+                    value={customNetworkId}
+                    onChange={(e) => setCustomNetworkId(e.target.value)}
+                    className="input"
+                    placeholder="Enter network ID..."
+                    disabled={!!connectedAPI}
+                    style={{ maxWidth: '200px' }}
+                  />
+                )}
                 <button onClick={onConnectWallet} disabled={availableAPIs.length === 0} className="btn btn-primary">
                   {availableAPIs.length > 0 ? 'Connect Wallet' : 'No Wallet Detected'}
                 </button>
               </>
             ) : (
               <>
-                {networkId === 'undeployed' && (
-                  <button onClick={onRequestDustFromFaucet} disabled={isLoading} className="btn btn-accent">
-                    {isLoading ? 'Processing...' : 'Get Tokens from Faucet'}
-                  </button>
-                )}
-                {networkId === 'preview' && (
+                {(['preview', 'qanet', 'preprod'] as const).includes(
+                  effectiveNetworkId as 'preview' | 'qanet' | 'preprod'
+                ) && (
                   <a
-                    href="https://faucet.preview.midnight.network/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-accent"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    Go to Faucet
-                  </a>
-                )}
-                {networkId === 'qanet' && (
-                  <a
-                    href="https://faucet.qanet.midnight.network/"
+                    href={`https://faucet.${effectiveNetworkId}.midnight.network/`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-accent"
@@ -470,21 +527,57 @@ export default function App() {
           </div>
         </section>
 
-        <section className="wallet-section">
-          <div className="wallet-info">
-            <div className="network-info">
-              <span className="info-label">Contract Address:</span>
-              <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+        {/* Contract Section */}
+        <div className="contract-setup-grid">
+          <section className="contract-card">
+            <div className="contract-card-header">
+              <h3>Deploy New Contract</h3>
+              <span className="contract-card-badge">New</span>
             </div>
-          </div>
-          <div className="wallet-actions">
-            <button onClick={onDeploy} disabled={!providers || isLoading} className="btn btn-primary">
-              {isLoading ? 'Processing...' : 'Deploy Contract'}
-            </button>
-          </div>
-        </section>
+            <div className="contract-card-content">
+              <button
+                onClick={onDeploy}
+                disabled={!providers || !!deployed || isLoading}
+                className="btn btn-primary btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Deploy Contract'}
+              </button>
+            </div>
+          </section>
+          <section className="contract-card">
+            <div className="contract-card-header">
+              <h3>Join Existing Contract</h3>
+              <span className="contract-card-badge badge-secondary">Join</span>
+            </div>
+            <div className="contract-card-content">
+              <div className="form-group">
+                <input
+                  type="text"
+                  value={joinAddress}
+                  onChange={(e) => setJoinAddress(e.target.value)}
+                  className="input"
+                  placeholder="Enter contract address..."
+                  disabled={!!deployed || isLoading}
+                />
+              </div>
+              <button
+                onClick={onJoinContract}
+                disabled={!providers || !joinAddress.trim() || !!deployed || isLoading}
+                className="btn btn-primary btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Join Contract'}
+              </button>
+            </div>
+          </section>
+        </div>
+        <div className="info-box" style={{ marginBottom: '1.25rem' }}>
+          <span className="info-label">Contract Address:</span>
+          <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+        </div>
 
+        {/* Token Operations */}
         <section className="contracts-grid">
+          {/* Unshielded Tokens Card */}
           <div className="card">
             <div className="card-header">
               <h2>Unshielded Tokens</h2>
@@ -557,6 +650,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* NIGHT Tokens Card */}
           <div className="card">
             <div className="card-header">
               <h2>NIGHT Tokens</h2>
@@ -606,18 +700,91 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Shielded Tokens Card */}
+          <div className="card">
+            <div className="card-header">
+              <h2>Shielded Tokens</h2>
+            </div>
+            <div className="card-content">
+              <div className="form-group">
+                <label htmlFor="shieldedMintAmount">Mint Amount</label>
+                <input
+                  id="shieldedMintAmount"
+                  type="number"
+                  value={shieldedMintAmount}
+                  onChange={(e) => setShieldedMintAmount(e.target.value)}
+                  className="input"
+                  placeholder="10000"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="shieldedClaimAmount">Claim Amount</label>
+                <input
+                  id="shieldedClaimAmount"
+                  type="number"
+                  value={shieldedClaimAmount}
+                  onChange={(e) => setShieldedSendAmount(e.target.value)}
+                  className="input"
+                  placeholder="6000"
+                />
+              </div>
+              <button
+                onClick={onMintAndClaimShielded}
+                disabled={!deployed || !providers || isLoading}
+                className="btn btn-accent btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Mint & Claim Shielded'}
+              </button>
+
+              <div className="info-box">
+                <span className="info-label">Token Color:</span>
+                <code className="color-code">
+                  {shieldedColor
+                    ? '0x' +
+                      Array.from(shieldedColor)
+                        .map((b) => b.toString(16).padStart(2, '0'))
+                        .join('')
+                    : '—'}
+                </code>
+              </div>
+
+              <div className="divider"></div>
+
+              <div className="form-group">
+                <label htmlFor="shieldedDepositAmount">Deposit Amount</label>
+                <input
+                  id="shieldedDepositAmount"
+                  type="number"
+                  value={shieldedDepositAmount}
+                  onChange={(e) => setShieldedDepositAmount(e.target.value)}
+                  className="input"
+                  placeholder="1500"
+                />
+              </div>
+              <button
+                onClick={onDepositShielded}
+                disabled={!deployed || !providers || !shieldedColor || isLoading}
+                className="btn btn-accent btn-block"
+              >
+                {isLoading ? 'Processing...' : 'Deposit Shielded'}
+              </button>
+            </div>
+          </div>
         </section>
 
+        {/* Activity Log */}
         <section className="activity-section">
-          <h3 className="activity-title">📊 Activity Log</h3>
+          <h3 className="activity-title">Activity Log</h3>
           <div className="activity-log">
-            {txLog.length === 0 ? (
+            {logs.length === 0 ? (
               <p className="empty-state">No activity yet</p>
             ) : (
               <ul className="log-list">
-                {txLog.map((l, i) => (
-                  <li key={i} className="log-item">
-                    {l}
+                {logs.map((log, index) => (
+                  <li key={index} className="log-item">
+                    {log}
                   </li>
                 ))}
               </ul>

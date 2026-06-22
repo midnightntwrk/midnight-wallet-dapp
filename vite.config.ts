@@ -19,6 +19,9 @@ import wasm from 'vite-plugin-wasm';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   define: {
@@ -29,8 +32,9 @@ export default defineConfig({
       process: 'process/browser',
       buffer: 'buffer',
       util: 'util',
-      crypto: 'crypto-browserify',
+      crypto: path.resolve(__dirname, 'src/lib/crypto-shim.ts'),
       stream: 'stream-browserify',
+      events: 'events',
     },
   },
   // ❌ remove topLevelAwait() from plugins:
@@ -40,7 +44,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'src/contract/*',
+          src: 'src/contract/compiled',
           dest: 'contract',
         },
       ],
@@ -50,7 +54,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           // Only apply to /contract/* paths - return 404 if file doesn't exist
-          if (req.url?.startsWith('/contract/')) {
+          if (req.url?.startsWith('/contract/compiled/')) {
             const filePath = path.join(server.config.root, 'src', req.url);
 
             if (!fs.existsSync(filePath)) {
@@ -64,6 +68,12 @@ export default defineConfig({
       },
     },
   ],
+  optimizeDeps: {
+    include: ['level', 'browser-level', 'abstract-level', 'level-supports', 'level-transcoder'],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
   build: {
     target: 'esnext',
   },
