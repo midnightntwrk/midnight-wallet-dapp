@@ -5,9 +5,9 @@ __metadata:
   version: 9
   cacheKey: 10
 
-"@apollo/client@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "@apollo/client@npm:4.2.0"
+"@apollo/client@npm:^4.2.3":
+  version: 4.2.6
+  resolution: "@apollo/client@npm:4.2.6"
   dependencies:
     "@graphql-typed-document-node/core": "npm:^3.1.1"
     "@wry/caches": "npm:^1.0.0"
@@ -17,7 +17,7 @@ __metadata:
     optimism: "npm:^0.18.0"
     tslib: "npm:^2.3.0"
   peerDependencies:
-    graphql: ^16.0.0
+    graphql: ^16.0.0 || ^17.0.0
     graphql-ws: ^5.5.5 || ^6.0.3
     react: ^17.0.0 || ^18.0.0 || >=19.0.0-rc
     react-dom: ^17.0.0 || ^18.0.0 || >=19.0.0-rc
@@ -32,7 +32,7 @@ __metadata:
       optional: true
     subscriptions-transport-ws:
       optional: true
-  checksum: 10/fceef4fdeb0780fe91dd95ccd9fea9b56710698b154a1bc6b843ade8df39475d5133eb918705152459ec54f618bd420008e1a0c46012ae8ae7d62bc1e619359e
+  checksum: 10/cfedb7fccb2ffd92e72819fc61cf3fd7a77f6bf75446b15b7a350f2c072b8ccd15e80b84d62db75dce330b9dab1cdf45270774153ef6a80b1d90aaea60377a8e
   languageName: node
   linkType: hard
 
@@ -259,16 +259,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@effect/platform@npm:^0.95.0":
-  version: 0.95.0
-  resolution: "@effect/platform@npm:0.95.0"
+"@effect/platform@npm:^0.96.1":
+  version: 0.96.2
+  resolution: "@effect/platform@npm:0.96.2"
   dependencies:
     find-my-way-ts: "npm:^0.1.6"
-    msgpackr: "npm:^1.11.4"
+    msgpackr: "npm:^1.11.10"
     multipasta: "npm:^0.2.7"
   peerDependencies:
-    effect: ^3.20.0
-  checksum: 10/ae3f3bd441f77bb0f3bb71f954d3a06be2565e4d924eba8c7d5c898da32d893f42c4af0e5c6fee5a1ba087ab7d2d1dae8734a4b1e830baeb654fcccd63c996bb
+    effect: ^3.21.4
+  checksum: 10/d10d0265f9b8392e9013af6db4e4ccce42523962360e8b99f8bdfb660aa32d5c0b661a0fe45b1f705bc2fc43cf5545da6cf6b530e3c02c25ac95a7f849b30db9
   languageName: node
   linkType: hard
 
@@ -649,186 +649,177 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/compact-js@npm:2.5.1":
-  version: 2.5.1
-  resolution: "@midnight-ntwrk/compact-js@npm:2.5.1"
+"@midnight-ntwrk/compact-js@npm:2.5.5-rc.7":
+  version: 2.5.5-rc.7
+  resolution: "@midnight-ntwrk/compact-js@npm:2.5.5-rc.7"
   dependencies:
-    "@effect/platform": "npm:^0.95.0"
-    "@midnight-ntwrk/compact-runtime": "npm:0.16.0"
-    "@midnight-ntwrk/ledger-v8": "npm:^8.0.3"
-    "@midnight-ntwrk/platform-js": "npm:^2.2.4"
-    effect: "npm:^3.20.0"
+    "@effect/platform": "npm:^0.96.1"
+    "@midnight-ntwrk/compact-runtime": "npm:0.18.0-rc.1"
+    "@midnight-ntwrk/platform-js": "npm:^3.0.0"
+    "@midnightntwrk/ledger-v9": "npm:^1.0.0-rc.3"
+    "@noble/hashes": "npm:^2.2.0"
+    effect: "npm:^3.21.4"
     tslib: "npm:^2.8.1"
-  checksum: 10/ee041b88d8fd43dc63f8cbb6b02f2eb0d6445921633b032e1dd3e909c75be8ca8f311cee70d16a9d06795bbb94172d2a6797799ee3870f29a8aa42e7e3e153b6
+  checksum: 10/4546878614e72da0133d923ea2a54017372d4d04c6290dfca293b525b2c53a95c0f44dd4262c0d6104391870a8efe4677118552f42d54a1da04130f34ec71012
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/compact-runtime@npm:0.16.0":
-  version: 0.16.0
-  resolution: "@midnight-ntwrk/compact-runtime@npm:0.16.0"
+"@midnight-ntwrk/compact-runtime@npm:0.18.0-rc.1":
+  version: 0.18.0-rc.1
+  resolution: "@midnight-ntwrk/compact-runtime@npm:0.18.0-rc.1"
   dependencies:
-    "@midnight-ntwrk/onchain-runtime-v3": "npm:^3.0.0"
+    "@midnightntwrk/onchain-runtime-v4": "npm:^4.0.0-rc.3"
+    "@noble/curves": "npm:^2.2.0"
+    "@noble/hashes": "npm:^2.0.1"
     "@types/object-inspect": "npm:^1.8.1"
     object-inspect: "npm:^1.12.3"
-  checksum: 10/ef0c68d53bba6a04f336094c82c26b781082d7ce4ee09f0539009fb108776b36ea24b9a774292d9bbf9722b8a78d47254b5f80a613d4010a7f7d108514243023
+  checksum: 10/37bc76bd3e3bb81ef10fd7d0f69e7fe0001496401bf2a7a3c731285e76926763aeed24dff1af5b686ee3a8a02a93553be56293c173f0346f84b9987b6e6767bf
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/dapp-connector-api@npm:4.0.1":
-  version: 4.0.1
-  resolution: "@midnight-ntwrk/dapp-connector-api@npm:4.0.1"
-  checksum: 10/b5a2fe117390ea40d5d1030a600351400624532169f2beeaa2fa130935c27110e3743fb8f9028d2541ae466e6e168a79efcfd45aaf1bf87a8ca8340bbcf53814
-  languageName: node
-  linkType: hard
-
-"@midnight-ntwrk/ledger-v8@npm:8.1.0":
-  version: 8.1.0
-  resolution: "@midnight-ntwrk/ledger-v8@npm:8.1.0"
-  checksum: 10/10d56076b0333a502f157c816f8cfebefc8d50221cb20c6db15abcbf2d0092bdaf7e9bc1bd19a6d9f51455547c713c916cb16d4a7d18e83cba0e172ad6e2a507
-  languageName: node
-  linkType: hard
-
-"@midnight-ntwrk/midnight-js-compact@npm:^4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-compact@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-compact@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-compact@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
   bin:
     fetch-compactc: dist/fetch-compact.mjs
     run-compactc: dist/run-compactc.cjs
-  checksum: 10/7446faf9bb885756ecb766235f7378804d82a011718d3e1e9ce797f96f82cf593808192a1ddbdb4c7e4589b5ac3f051ba5fb4547c6c569f31fe28d0b0997abe8
+  checksum: 10/5e9031ee28c581e6f4cf85e2de615303f72455f7ad7ce6eb7e7e2a5d2e457267d45c3feb9cfc5b451182e569e0c2de966115bdc874a66c6106dc77bc6fe0f78b
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-contracts@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-contracts@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-contracts@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-contracts@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-network-id": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
-  checksum: 10/93791613419dd914cbd4db6c0bc75cebb093962e4162a391d298e2ae705e53c2e87a40fa923fd9a9a6a31cdb91bede0836673beea14d4a594e15da250a1b4feb
+    "@midnight-ntwrk/midnight-js-network-id": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
+    effect: "npm:^3.20.0"
+  checksum: 10/1725f56a831a768a867f5275811761564aed035ef58db5417b4f920e09de7475aeb002f8383ba74629fa8fc6444d48b9707df02a05add18347ab7909bd0462b1
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
     cross-fetch: "npm:^4.1.0"
-  checksum: 10/49551c53a7161fe72ec404f0e40fc03cbf996bcfa4a70bc3e9f547364931bdd2af874687412d6f225b0dbe33a5748f9b62fb2e05c1f5e7b596b38e156e8e38f6
+  checksum: 10/35a83bc01d4a100552b6987132b8306188d7c346dc2a460b0efefbf69d9912f71f27bf73c6a8e3a7f5aa738b00f6bd2902374ab3b3e1335590c7ff563732e343
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-contracts": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-network-id": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-contracts": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-network-id": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
     cross-fetch: "npm:^4.1.0"
     fetch-retry: "npm:^6.0.0"
-  checksum: 10/f2dc4acb733d3a87ef1c18ab225c081adfc42e3d7b626ac64ff858e931a2df873ab2161b13110522490c246ef5154a821db5fc24d0fb8ff43fa7e3745aa1defb
+  checksum: 10/95cf360f41eeb9db7bb3fc038558a54cdd4908cfe595fe5e7f1ba53cb6d4d8f94f7b5550ab57f2f07fe5e4cd2ff7a04d17306e7a0e07e9f285663f1956a73c12
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-indexer-public-data-provider@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-indexer-public-data-provider@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-indexer-public-data-provider@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-indexer-public-data-provider@npm:5.0.0-beta.6"
   dependencies:
-    "@apollo/client": "npm:^4.2.0"
+    "@apollo/client": "npm:^4.2.3"
     "@graphql-typed-document-node/core": "npm:^3.2.0"
-    "@midnight-ntwrk/midnight-js-network-id": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-network-id": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
     buffer: "npm:^6.0.3"
     cross-fetch: "npm:^4.1.0"
-    graphql: "npm:^16.14.0"
+    graphql: "npm:^17.0.1"
     graphql-ws: "npm:^6.0.8"
     isomorphic-ws: "npm:^5.0.0"
     rxjs: "npm:^7.8.2"
     ws: "npm:^8.20.0"
-  checksum: 10/89974d6d7e8588b1992ad552a15d7f512a437bfd2fd3e1192e5c52a1663902e6af84e2189ef2a3626f860acf1178303bb971e39b696215a0995a984f6397eef8
+  checksum: 10/71b544531dce9be2a37076fcf637551a1d26cb76c264e54a9240971a746e612cd854d76199b12c9cc54a4e9a80b280072edb100a012542eacc21282111f725f2
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-level-private-state-provider@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-level-private-state-provider@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-level-private-state-provider@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-level-private-state-provider@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
     "@noble/ciphers": "npm:^2.2.0"
     "@noble/hashes": "npm:^2.2.0"
     abstract-level: "npm:^3.1.1"
     buffer: "npm:^6.0.3"
     level: "npm:^10.0.0"
     superjson: "npm:^2.2.6"
-  checksum: 10/f28e1b8d53da55d4088f1937d4f30d2029349407119adf78850c0fa997c538f9201d2ad6423bbd203d15ae5656d547f000e805dfe999100f2f30428d5206898f
+  checksum: 10/3bc59ba8390c483de5fc3b3cdd9a391ade6fd21115cb0f4f49ea45e3aa1f6745dcaed6ff2dba3ca35fb24b235c0209a86e317caca445e89e04b287305b50bb7d
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-network-id@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-network-id@npm:4.1.1"
-  checksum: 10/ac2f06da0d3bdec6ee83fe84312d8d012b398dad8e23896727c8de10df51eefeeff8eff2de29079c534e090f7cc8520f6e0763a324b560dfe1a0f1d55f2ca2a3
+"@midnight-ntwrk/midnight-js-network-id@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-network-id@npm:5.0.0-beta.6"
+  checksum: 10/431fcb220957d931def94c59714b89b3c05f2542723eb9f82fe0eb4726eb9866c778d61e84c1c8187d5ecbe41faba0b53fd5ff9bbbdefc1f28822d22dc3be4ec
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-protocol@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-protocol@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-protocol@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-protocol@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/compact-js": "npm:2.5.1"
-    "@midnight-ntwrk/compact-runtime": "npm:0.16.0"
-    "@midnight-ntwrk/ledger-v8": "npm:8.1.0"
-    "@midnight-ntwrk/onchain-runtime-v3": "npm:3.0.0"
-    "@midnight-ntwrk/platform-js": "npm:2.2.4"
-  checksum: 10/bfd6195e90b8c0fbc178b32ff9f8223f377d48a55a4a6fdedba424ede77c2234eac75555263b73a61f3ca14d2cc27ed935b3efae15daa6a475a00db4a696e7a1
+    "@midnight-ntwrk/compact-js": "npm:2.5.5-rc.7"
+    "@midnight-ntwrk/compact-runtime": "npm:0.18.0-rc.1"
+    "@midnight-ntwrk/platform-js": "npm:3.0.0"
+    "@midnightntwrk/ledger-v9": "npm:1.0.0-rc.3"
+    "@midnightntwrk/onchain-runtime-v4": "npm:4.0.0-rc.3"
+  checksum: 10/f9c2fde499e5a2e52e84374a934c94c3c94a7fcd4e03ac9931f4093ce6b270d39a4187b838b2d9a6497624f9e2c44591b0f5f542c7a1e7f70177af9eabcf95a8
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-types@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-types@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-types@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-types@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
     effect: "npm:^3.20.0"
     pino: "npm:^10.3.1"
     rxjs: "npm:^7.8.2"
-  checksum: 10/a11a994f0838968954f01146c9f5f65f29c8e30fe305401a3f0cef15b6a75802078d2c8c4abe6ef743585a12a05b4d9d30dbe1bb7177699cd2623302fb2b619e
+  checksum: 10/f28d6c18e2004c85e36e1240caba49cef2f636c2f0c7afbbd52e40804c9cbb01014d13bd0c239338f569367ca61e61d4ac1892475c757e9f8a0c3237aa2e4bad
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js-utils@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js-utils@npm:4.1.1"
+"@midnight-ntwrk/midnight-js-utils@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js-utils@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-network-id": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/wallet-sdk-address-format": "npm:^3.1.0"
-  checksum: 10/73f3ab682bd0ea37b988bc34e8036bc03d748b1df534ea57764c7fc656a235ea3287ca55481d57be956455ff4a8334e805c99d87d95c998f1879b5b7743dc18c
+    "@midnight-ntwrk/midnight-js-network-id": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnightntwrk/wallet-sdk-address-format": "npm:4.0.0-beta.2"
+    "@noble/hashes": "npm:^2.2.0"
+  checksum: 10/1fe56fd750f6f6b24639f9e6e98f036296f9884c24b424c947d33aebdb31c1ee5ba9004ae1f51bb30326e73ce98522aa36f8d34b665272ac7d1588321e6e00bc
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/midnight-js@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@midnight-ntwrk/midnight-js@npm:4.1.1"
+"@midnight-ntwrk/midnight-js@npm:5.0.0-beta.6":
+  version: 5.0.0-beta.6
+  resolution: "@midnight-ntwrk/midnight-js@npm:5.0.0-beta.6"
   dependencies:
-    "@midnight-ntwrk/midnight-js-contracts": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-network-id": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-protocol": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-types": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-utils": "npm:4.1.1"
-  checksum: 10/be98f9c9c4ee40da376b2b688b7823c50bbcfb4ae2755f01ec2c20ebf985bd06fbfe0dbd66c2bc6f5dfc50dee0bd92c12596ffa8add727639b34d49e86e3eb1e
+    "@midnight-ntwrk/midnight-js-contracts": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-network-id": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0-beta.6"
+  checksum: 10/58e9e146f5119a6b3fd3aa625510bd7365dab9b9e795efb6bf1ecbd1a95b6d3f005ff3808aff9dfe1820615d60b6564de4199809cb30db1cccc384ffb206d84f
   languageName: node
   linkType: hard
 
@@ -837,16 +828,16 @@ __metadata:
   resolution: "@midnight-ntwrk/midnight-wallet-dapp@workspace:."
   dependencies:
     "@eslint/js": "npm:^9.18.0"
-    "@midnight-ntwrk/compact-runtime": "npm:0.16.0"
-    "@midnight-ntwrk/dapp-connector-api": "npm:4.0.1"
-    "@midnight-ntwrk/ledger-v8": "npm:8.1.0"
-    "@midnight-ntwrk/midnight-js": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-compact": "npm:^4.1.1"
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "npm:4.1.1"
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "npm:4.1.1"
-    "@midnight-ntwrk/wallet-sdk-address-format": "npm:3.1.0"
+    "@midnight-ntwrk/compact-runtime": "npm:0.18.0-rc.1"
+    "@midnight-ntwrk/midnight-js": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-compact": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "npm:5.0.0-beta.6"
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "npm:5.0.0-beta.6"
+    "@midnightntwrk/dapp-connector-api": "npm:4.1.0-beta.1"
+    "@midnightntwrk/ledger-v9": "npm:1.0.0-rc.3"
+    "@midnightntwrk/wallet-sdk-address-format": "npm:4.0.0-beta.2"
     "@playwright/test": "npm:^1.50.0"
     "@types/events": "npm:^3"
     "@types/node": "npm:^25.5.0"
@@ -880,43 +871,46 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@midnight-ntwrk/onchain-runtime-v3@npm:3.0.0, @midnight-ntwrk/onchain-runtime-v3@npm:^3.0.0":
+"@midnight-ntwrk/platform-js@npm:3.0.0":
   version: 3.0.0
-  resolution: "@midnight-ntwrk/onchain-runtime-v3@npm:3.0.0"
-  checksum: 10/873aeb9e631c3678373c62b5aef847de454de94427028fb3d3f28bfdc8b2c02a3c770bd79d9bfef183eb9db6fb8c23e6826636f2e512ffd6eacbcf7cc0651c5d
-  languageName: node
-  linkType: hard
-
-"@midnight-ntwrk/platform-js@npm:2.2.4, @midnight-ntwrk/platform-js@npm:^2.2.4":
-  version: 2.2.4
-  resolution: "@midnight-ntwrk/platform-js@npm:2.2.4"
+  resolution: "@midnight-ntwrk/platform-js@npm:3.0.0"
   dependencies:
-    "@effect/platform": "npm:^0.95.0"
-    effect: "npm:^3.20.0"
+    "@effect/platform": "npm:^0.96.1"
+    effect: "npm:^3.21.0"
     tslib: "npm:^2.8.1"
-  checksum: 10/1650bb7e54a64740aaaf27f7e84b7bffdb08611c994bbf54208db43a0a11d10ea8994f05d82e848d60d6fcee8a9b3a5db770d306262b99547e71185d52614825
+  checksum: 10/1ca2b3bab95c909837de33d9f871c502e38091a40d14bb240a43e304abaae009172a414e4a9cdf49b5655e7c42b20fa62b17a6d8489e5942f4d8a19ba04de940
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/wallet-sdk-address-format@npm:3.1.0":
-  version: 3.1.0
-  resolution: "@midnight-ntwrk/wallet-sdk-address-format@npm:3.1.0"
-  dependencies:
-    "@midnight-ntwrk/ledger-v8": "npm:^8.0.2"
-    "@scure/base": "npm:^2.0.0"
-    "@subsquid/scale-codec": "npm:^4.0.1"
-  checksum: 10/be1cfde40a7753c62377a914ec72fe29ac57e38895b33d14861b22b7193aa1fdd1989680f5b5907b73a24d9c080e5ea6711a88b4442192fb1b1fa37da0a9009a
+"@midnightntwrk/dapp-connector-api@npm:4.1.0-beta.1":
+  version: 4.1.0-beta.1
+  resolution: "@midnightntwrk/dapp-connector-api@npm:4.1.0-beta.1"
+  checksum: 10/dc4ca4a201f98a2e078d3546fb0a60760dc6f2c8784ca2fdbed275009383dfc763a3007dfabd6d7d23faf5dcb93e28b24ae09f519692b33eefe149841cc767ee
   languageName: node
   linkType: hard
 
-"@midnight-ntwrk/wallet-sdk-address-format@npm:^3.1.0":
-  version: 3.1.2
-  resolution: "@midnight-ntwrk/wallet-sdk-address-format@npm:3.1.2"
+"@midnightntwrk/ledger-v9@npm:1.0.0-rc.3":
+  version: 1.0.0-rc.3
+  resolution: "@midnightntwrk/ledger-v9@npm:1.0.0-rc.3"
+  checksum: 10/5d2c2ff808b6dcc8f8ba2b75f81467c9bc4904e625e246bea1f8c77be7eb6d06cac28b189d1f6b708a85559ddf133efe93147da12169db48f927c72f414d0fa7
+  languageName: node
+  linkType: hard
+
+"@midnightntwrk/onchain-runtime-v4@npm:4.0.0-rc.3":
+  version: 4.0.0-rc.3
+  resolution: "@midnightntwrk/onchain-runtime-v4@npm:4.0.0-rc.3"
+  checksum: 10/394a4ff27b575b0e30bcb5ca05c2f89dc3bc7915103aa592c1d89bb32ff8589ac732d4d0bdafb4a99a9757e1a41ce21955f68148f783edb83b21988b24154078
+  languageName: node
+  linkType: hard
+
+"@midnightntwrk/wallet-sdk-address-format@npm:4.0.0-beta.2":
+  version: 4.0.0-beta.2
+  resolution: "@midnightntwrk/wallet-sdk-address-format@npm:4.0.0-beta.2"
   dependencies:
-    "@midnight-ntwrk/ledger-v8": "npm:^8.1.0"
+    "@midnightntwrk/ledger-v9": "npm:1.0.0-rc.3"
     "@scure/base": "npm:^2.0.0"
     "@subsquid/scale-codec": "npm:^4.0.1"
-  checksum: 10/f3e2374c1dd8e31310aa464fa2afecca3cca92b923a999bfcba2922225b907e5387b94a70e6a8c06e8fb9d51fd9140a08c827c13f8a9191fd18d597cb5ab7b0c
+  checksum: 10/7313ae764b1051a3f75f7781db67c27cad8a52b8c9a512f0508f17dbb39641692f737237e21c902c48fa04ebe552eb704a15ee9a7b6b1d3c971c6ad6a4b08235
   languageName: node
   linkType: hard
 
@@ -969,7 +963,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:^2.2.0":
+"@noble/curves@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@noble/curves@npm:2.2.0"
+  dependencies:
+    "@noble/hashes": "npm:2.2.0"
+  checksum: 10/f9545e55bb8b6cdf2618c936870b9229339c90b25f129fc368b4b534e723f274e5c0daf8abca2f891bcf0a59c3b49c5ac5205899aec07f5251f545ec616e3aa9
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:2.2.0, @noble/hashes@npm:^2.0.1, @noble/hashes@npm:^2.2.0":
   version: 2.2.0
   resolution: "@noble/hashes@npm:2.2.0"
   checksum: 10/b1b78bedc2a01394be047429f3d888905015fe8a09f1b7e43e0b5736b54133df62f73dcc73ede43af38e96e86156afb45b86973fdeaa95d9f0880333c3fc0907
@@ -2688,13 +2691,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"effect@npm:3.20.0":
-  version: 3.20.0
-  resolution: "effect@npm:3.20.0"
+"effect@npm:3.21.4":
+  version: 3.21.4
+  resolution: "effect@npm:3.21.4"
   dependencies:
     "@standard-schema/spec": "npm:^1.0.0"
     fast-check: "npm:^3.23.1"
-  checksum: 10/62c1e43f86db04551aaf494a3d2fe296ce3a7d5e25c79c0b41b88e82152af6bb429ce040c7b51fd1b98d3fe93bef768737967f182b4b88ed488689860b55fc26
+  checksum: 10/c95506043e070662af85963af779b3d4e9ec501e03069532888831cc268e0fd9f448dcd2a4c89809e05471e64dcd270313b196056f878d1c028037870694af11
   languageName: node
   linkType: hard
 
@@ -3530,10 +3533,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@npm:^16.14.0":
-  version: 16.14.1
-  resolution: "graphql@npm:16.14.1"
-  checksum: 10/8e506bdd2a0dac666e3de82461bd3cf337335b9c0a9a209756a4d20c481393a4f664084474ccc1ccd22a1fae174a69695ce4154a59d2b6e1c0de0b2cfc992ca8
+"graphql@npm:^17.0.1":
+  version: 17.0.2
+  resolution: "graphql@npm:17.0.2"
+  checksum: 10/e3760187b08cafd0755cc504bf272623cba8a05c29671c9ec5709fe634aaf62011a98e7831f67add3775261a0617e1b0d548da99ab70532b72d6dd5e1f0915ca
   languageName: node
   linkType: hard
 
@@ -4493,15 +4496,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"msgpackr@npm:^1.11.4":
-  version: 1.11.9
-  resolution: "msgpackr@npm:1.11.9"
+"msgpackr@npm:^1.11.10":
+  version: 1.12.1
+  resolution: "msgpackr@npm:1.12.1"
   dependencies:
     msgpackr-extract: "npm:^3.0.2"
   dependenciesMeta:
     msgpackr-extract:
       optional: true
-  checksum: 10/823ac908ccd5de622d4571e65a1dc0963821c7b310a49dea44a1c444bdbd301a2ad04e7a215d34d547bbdfa5dbff918a7973f3a37850dc36cca51af5607fb3d0
+  checksum: 10/90f5eabb2b059f441714ec0b09cfccea589caf36604598ae44a023e6c113f97889ca6c899beb318bc1a6bb7d6b4d6bef75a6fc13a01aa49c3111ae08da2c6db5
   languageName: node
   linkType: hard
 

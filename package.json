@@ -28,15 +28,15 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "0.16.0",
-    "@midnight-ntwrk/dapp-connector-api": "4.0.1",
-    "@midnight-ntwrk/ledger-v8": "8.1.0",
-    "@midnight-ntwrk/midnight-js": "4.1.1",
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "4.1.1",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.1.1",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.1.1",
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "4.1.1",
-    "@midnight-ntwrk/wallet-sdk-address-format": "3.1.0",
+    "@midnight-ntwrk/compact-runtime": "0.18.0-rc.1",
+    "@midnight-ntwrk/midnight-js": "5.0.0-beta.6",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0-beta.6",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0-beta.6",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0-beta.6",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0-beta.6",
+    "@midnightntwrk/dapp-connector-api": "4.1.0-beta.1",
+    "@midnightntwrk/ledger-v9": "1.0.0-rc.3",
+    "@midnightntwrk/wallet-sdk-address-format": "4.0.0-beta.2",
     "bech32": "^2.0.0",
     "events": "^3.3.0",
     "level": "^10.0.0",
@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
-    "@midnight-ntwrk/midnight-js-compact": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-compact": "5.0.0-beta.6",
     "@playwright/test": "^1.50.0",
     "@types/events": "^3",
     "@types/node": "^25.5.0",
@@ -73,9 +73,11 @@
     "vite-plugin-wasm": "^3.5.0"
   },
   "resolutions": {
-    "@midnight-ntwrk/compact-js": "2.5.1",
-    "@midnight-ntwrk/ledger-v8": "8.1.0",
-    "@midnight-ntwrk/compact-runtime": "0.16.0",
-    "effect": "3.20.0"
+    "@midnight-ntwrk/compact-js": "2.5.5-rc.7",
+    "@midnight-ntwrk/compact-runtime": "0.18.0-rc.1",
+    "@midnight-ntwrk/platform-js": "3.0.0",
+    "@midnightntwrk/ledger-v9": "1.0.0-rc.3",
+    "@midnightntwrk/onchain-runtime-v4": "4.0.0-rc.3",
+    "effect": "3.21.4"
   }
 }

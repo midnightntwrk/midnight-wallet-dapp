@@ -1,0 +1,218 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.33.0",
+  "language-version": "0.25.0",
+  "runtime-version": "0.18.0-rc.1",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 12424,
+      "hash": "d12fe56592d2ff6a2fd453231fe0f62a3ccfe6e5099db586cfbba6e1c5ca31e9"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 15260,
+      "hash": "6b125c6d7f99b0365a0d54a7fa3139186b9b15184943727fdb46415ab0bf39b4"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 100904,
+      "hash": "dd9e66be63bd77520addc48b34a860da4dd4d64d94207eed1cc15f1853ce4019"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 4828,
+      "hash": "8195d179320864488849f759a3910a07d45a7591f329711150ee7ba71eee8038"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "mintAndReceive.bzkir": {
+      "type": "file",
+      "size": 803,
+      "hash": "dee714b02a3dcf820de9bb9e4b31afd7e10ec159951b07c2b6340ac78ed8c842"
+    },
+    "mintAndReceive.zkir": {
+      "type": "file",
+      "size": 12539,
+      "hash": "49be8272c5a2c2e1092594a7c47f120b609108b9afc6b37aeb2406b68a184da8"
+    },
+    "mintAndSendShielded.bzkir": {
+      "type": "file",
+      "size": 1298,
+      "hash": "79e81aeb96fc342bb36f21cbdebf40c391d007f5e919bc5da7958a53382a0f75"
+    },
+    "mintAndSendShielded.zkir": {
+      "type": "file",
+      "size": 17969,
+      "hash": "0d9591a79538fed30e5eeecf1b37d18b13e89dd1a35aca74b3a9e4f44f0ffb4d"
+    },
+    "mintShieldedToSelf.bzkir": {
+      "type": "file",
+      "size": 599,
+      "hash": "51203effb77f8320f1e961148db796609dbd4b15e0dc92e2c8fde92befd39ee3"
+    },
+    "mintShieldedToSelf.zkir": {
+      "type": "file",
+      "size": 9063,
+      "hash": "81afa167efce23a2c8a0eef6d634156ead59dd8c94c012da79199c877f31aac8"
+    },
+    "receiveNightTokens.bzkir": {
+      "type": "file",
+      "size": 237,
+      "hash": "77198c33917dd500d5c48120ea031692354f4796ae59618c9c55a3a18ecda5cc"
+    },
+    "receiveNightTokens.zkir": {
+      "type": "file",
+      "size": 3255,
+      "hash": "1aa95fc055307eeed60e86e2098a593f6c8eb2817b15072cd841c94052fc42ca"
+    },
+    "receiveShieldedTokens.bzkir": {
+      "type": "file",
+      "size": 202,
+      "hash": "3f8b2d043f9e819b8d928401b5a174054cd466b427de2ee49eff1d08c9228675"
+    },
+    "receiveShieldedTokens.zkir": {
+      "type": "file",
+      "size": 2995,
+      "hash": "79be047ab91aab2226b70eb69237c06a1139af77906fc0ad68dc8bd81bf36299"
+    },
+    "receiveTokens.bzkir": {
+      "type": "file",
+      "size": 329,
+      "hash": "926cc87db2a839f157e87c336117cf99b2a050f59eaf8fa79af850e7250a6a53"
+    },
+    "receiveTokens.zkir": {
+      "type": "file",
+      "size": 4400,
+      "hash": "587615c67ee30c5b3bf7b50cc1f9abdba5cbb6292f4a5abbbd4a5f29e4dfd2d7"
+    },
+    "sendNightTokensToUser.bzkir": {
+      "type": "file",
+      "size": 396,
+      "hash": "b16b92d4eb97609aa6f5319613b62216175953c108b0367a7e9f000e0bd0bf8c"
+    },
+    "sendNightTokensToUser.zkir": {
+      "type": "file",
+      "size": 6143,
+      "hash": "75ee77acc5e641586bbcb76b0de00e87f45dad1a8a9c2c4f94862ea4ba2a8408"
+    },
+    "sendShieldedToUser.bzkir": {
+      "type": "file",
+      "size": 704,
+      "hash": "c6f39dba025ca65d12ab63a6bdb669f3fa39b5c72490514ea82cf872a7572282"
+    },
+    "sendShieldedToUser.zkir": {
+      "type": "file",
+      "size": 9923,
+      "hash": "718d6604aab9145c1d5fcb0ef5eb0e28cbfd5388046e0ec590d43cfaa0fa8b54"
+    },
+    "sendToUser.bzkir": {
+      "type": "file",
+      "size": 488,
+      "hash": "d37b9583762e0736fb2a20046a3091fe66c1e118aaf91906945182b513238bc9"
+    },
+    "sendToUser.zkir": {
+      "type": "file",
+      "size": 7288,
+      "hash": "c2b88d3bc349853269e5eb12deb77400dfa04315956ace840bfa0f0e00ec3444"
+    }
+  },
+  "keys": {
+    "type": "directory",
+    "mintAndReceive.prover": {
+      "type": "file",
+      "size": 2817529,
+      "hash": "4caed22e5fb8ed235df520bd3abd5b5ffd0347fe33084acc42581c30f8c8093d"
+    },
+    "mintAndReceive.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "0c4f166863b845424af6be9292167a2ae3a634cfb57db7733c00ed933dfb8858"
+    },
+    "mintAndSendShielded.prover": {
+      "type": "file",
+      "size": 10008892,
+      "hash": "d06a95af84e54d25cff65a1e4495ded336e0dfb751855a51f0bb36f48c4d0858"
+    },
+    "mintAndSendShielded.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "82317ecc58eaab0ba9a40b17ad76ec74f9ca28939693c2e5d8c6c940c49ee1d2"
+    },
+    "mintShieldedToSelf.prover": {
+      "type": "file",
+      "size": 5204654,
+      "hash": "04df24173f6d60d0d19b1bb72a27ae0969f7e1163dafea66c6d22e6b1c64fa6e"
+    },
+    "mintShieldedToSelf.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "1a9e98974f1ab6f87cf5585051b001488d0e7f11e755afef426b15ba53d83a5e"
+    },
+    "receiveNightTokens.prover": {
+      "type": "file",
+      "size": 77099,
+      "hash": "5f2f5bf114466b7d8444b1afd871b71b913b08d2f253240f8f9f1e6d7edb77bd"
+    },
+    "receiveNightTokens.verifier": {
+      "type": "file",
+      "size": 1351,
+      "hash": "33e57b6ffe3dbd3510b93a38a599bc582b43513c73d0dc591969d0d680d90d4f"
+    },
+    "receiveShieldedTokens.prover": {
+      "type": "file",
+      "size": 2823221,
+      "hash": "37d816d4aaac549a160754770cca7ff77d9f0af1f5b9add8ac6a166b2ec7052e"
+    },
+    "receiveShieldedTokens.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "079f937462bd68c6164b9435d70a8507144e59188cf65e95637e42b9b772daec"
+    },
+    "receiveTokens.prover": {
+      "type": "file",
+      "size": 2818255,
+      "hash": "8edcb4d4fbbeaf290d22aaf772528bb6d4b03c04ca238c67164a85870cd93e23"
+    },
+    "receiveTokens.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "e68cb9a3ceb744370656b86bb8f9477998972ac570bb8c797a63e6b5dfc9004e"
+    },
+    "sendNightTokensToUser.prover": {
+      "type": "file",
+      "size": 147262,
+      "hash": "3bbb929d6c9c3a244a0e4072a089592676b44ceb41b84f657202178cd9367f92"
+    },
+    "sendNightTokensToUser.verifier": {
+      "type": "file",
+      "size": 1351,
+      "hash": "f6b8fb7bcb07fca13f90c7c7e5125a561164daaeca60f36c282156920b7e45be"
+    },
+    "sendShieldedToUser.prover": {
+      "type": "file",
+      "size": 9993638,
+      "hash": "f5f1d74312e5e34501a7add0bc086db7db33d4b5c06b441a22340e15f1386bba"
+    },
+    "sendShieldedToUser.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "d45475e1c0952fe4a0dd5c83366c72257ba65d949634f72ce6ae6420808f8734"
+    },
+    "sendToUser.prover": {
+      "type": "file",
+      "size": 2820426,
+      "hash": "a93b89c47cc3cad34c62f9bc726ac17c7ae821a65699239e32d33f36f0637db0"
+    },
+    "sendToUser.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "5a5e20ef0a2a0546c07f0306aef6ab6646ff72150d9de26038835ab45ea801ef"
+    }
+  }
+}

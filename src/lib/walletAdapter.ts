@@ -27,8 +27,8 @@ import {
   Proof,
   SignatureEnabled,
   Transaction,
-} from '@midnight-ntwrk/ledger-v8';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+} from '@midnightntwrk/ledger-v9';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { ShieldedAddress } from './providers';
 
 export function uint8ArrayToHex(bytes: Uint8Array): string {
