@@ -1,6 +1,6 @@
 services:
   proof-server:
-    image: 'ghcr.io/midnight-ntwrk/proof-server:9.0.0-rc.4'
+    image: 'ghcr.io/midnight-ntwrk/proof-server:${PROOF_SERVER_VERSION}'
     container_name: proof-server_$TESTCONTAINERS_UID
     command: ['midnight-proof-server --verbose']
     ports:
@@ -15,7 +15,7 @@ services:
       start_period: 10s
 
   indexer:
-    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:4.4.0-pre-alpha.16-l91r3-n2r3-bridge-and-events-epics-contract-zswap-16c656df'
+    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:${INDEXER_VERSION}'
     container_name: indexer_$TESTCONTAINERS_UID
     ports:
       - '8088:8088'
@@ -40,7 +40,7 @@ services:
         condition: service_healthy
 
   node:
-    image: 'ghcr.io/midnight-ntwrk/midnight-node:2.0.0-rc.3'
+    image: 'ghcr.io/midnight-ntwrk/midnight-node:${MIDNIGHT_NODE_VERSION}'
     container_name: node_$TESTCONTAINERS_UID
     ports:
       - '9944:9944'
