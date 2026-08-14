@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) 2025-2026 Midnight Foundation
+ * Copyright (C) Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import {
   findDeployedContract,
   type FoundContract,
   submitCallTx,
-} from '@midnight-ntwrk/midnight-js-contracts';
+} from '@midnight-ntwrk/midnight-js/contracts';
+import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
-import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { bech32m } from 'bech32';
 
 import { useActivityLog } from './hooks/useActivityLog';

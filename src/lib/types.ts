@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) 2025-2026 Midnight Foundation
+ * Copyright (C) Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
 
 import * as CompiledOutput from '../contract/index';
-import { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
 import { ProvableCircuitId } from '@midnight-ntwrk/compact-js';
 
 export type DemoContract = CompiledOutput.Contract<undefined>;

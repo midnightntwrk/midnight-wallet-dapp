@@ -1,6 +1,6 @@
 /*
  * This file is part of midnight-wallet-dapp.
- * Copyright (C) 2025-2026 Midnight Foundation
+ * Copyright (C) Midnight Foundation
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import {
   type BlockHeightConfig,
   ProofProvider,
   UnboundTransaction,
-} from '@midnight-ntwrk/midnight-js-types';
+} from '@midnight-ntwrk/midnight-js/types';
 import { type ContractAddress, CostModel, UnprovenTransaction } from '@midnight-ntwrk/ledger-v8';
 
 export type ShieldedAddress = {
