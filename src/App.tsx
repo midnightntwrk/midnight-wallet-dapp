@@ -24,6 +24,7 @@ import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-nt
 import { buildProvidersFromConnectedAPI } from './lib/providers';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
+import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
 
 import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
@@ -371,8 +372,12 @@ export default function App() {
         return alert('No shielded coin public key available');
       }
 
+      // shieldedCoinPublicKey is bech32m-encoded (per dapp-connector API spec) — decode to raw 32 bytes
       const publicKeyBytes = new Uint8Array(
-        shieldedAddress.shieldedCoinPublicKey.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
+        ShieldedCoinPublicKey.codec.decode(
+          effectiveNetworkId,
+          MidnightBech32m.parse(shieldedAddress.shieldedCoinPublicKey)
+        ).data
       );
 
       const domainSep = crypto.getRandomValues(new Uint8Array(32));
