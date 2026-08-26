@@ -22,7 +22,7 @@ import {
 } from '@midnight-ntwrk/midnight-js/contracts';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
 import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
 
