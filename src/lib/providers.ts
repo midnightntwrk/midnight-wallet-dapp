@@ -60,7 +60,7 @@ export async function buildProvidersFromConnectedAPI(
     ] as typeof result;
   };
 
-  const proofProvider = httpClientProofProvider(config.proverServerUri!, zkConfigProvider);
+  const proofProvider = httpClientProofProvider({ url: config.proverServerUri!, zkConfigProvider });
 
   // TODO: switch to connectedAPI.getProvingProvider once implemented in dapp-connector
 

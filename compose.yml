@@ -1,22 +1,100 @@
+# The hard-fork stack: a chain whose genesis carries the ledger-v8 runtime, running on the ledger-v9
+# node binary, with the node toolkit on hand to enact the fork through governance. Adapted from
+# `testkit-js/compose-fork.yml` in midnight-js v5.0.0-beta.8; the difference is fixed host ports,
+# which the dApp and the wallet extension need and testcontainers does not.
 services:
-  proof-server:
-    image: 'ghcr.io/midnight-ntwrk/proof-server:${PROOF_SERVER_VERSION}'
-    container_name: proof-server_$TESTCONTAINERS_UID
-    command: ['midnight-proof-server --verbose']
-    ports:
-      - '6300:6300'
+  # One-shot: the OLD release writes the genesis, so the chain starts on the runtime the fork moves
+  # off. Root, and those three caps, purely to write into the shared volume.
+  chainspec:
+    image: 'ghcr.io/midnight-ntwrk/midnight-node:${FORK_FROM_NODE_TAG}'
+    container_name: chainspec_$TESTCONTAINERS_UID
+    user: '0:0'
+    entrypoint: ['/bin/bash', '-c']
+    command:
+      - 'test -s /chainspec/chainspec.json || /midnight-node build-spec > /chainspec/chainspec.json'
     environment:
-      RUST_BACKTRACE: 'full'
+      CFG_PRESET: 'dev'
+    volumes:
+      - chainspec:/chainspec
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+
+  # One-shot: lifts the new runtime blob out of the new node image into a volume the toolkit reads.
+  runtime-blob:
+    image: 'ghcr.io/midnight-ntwrk/midnight-node:${NODE_TAG}'
+    container_name: runtime-blob_$TESTCONTAINERS_UID
+    user: '0:0'
+    entrypoint: ['/bin/bash', '-c']
+    command:
+      # `$$` escapes compose interpolation. The image ships one `/artifacts-<arch>` directory, named
+      # for the architecture of the image that was pulled.
+      - >
+        set -eu; wasm=midnight_node_runtime.compact.compressed.wasm; case "$$(uname -m)" in x86_64) arch=amd64 ;;
+        aarch64|arm64) arch=arm64 ;; *) echo "unsupported architecture $$(uname -m)" >&2; exit 1 ;; esac; test -s
+        "/runtime/$$wasm" || cp "/artifacts-$$arch/$$wasm" "/runtime/$$wasm"; chmod 644 "/runtime/$$wasm"; ls -l
+        "/runtime/$$wasm"
+    volumes:
+      - runtime:/runtime
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # New binary, old chain. `restart: "no"` so a boundary that breaks the node stays visible.
+  node:
+    image: 'ghcr.io/midnight-ntwrk/midnight-node:${NODE_TAG}'
+    container_name: node_$TESTCONTAINERS_UID
+    depends_on:
+      chainspec:
+        condition: service_completed_successfully
+      runtime-blob:
+        condition: service_completed_successfully
+    restart: 'no'
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - '9944:9944'
+    volumes:
+      - chainspec:/chainspec:ro
+      - node-data:/node
+    environment:
+      CFG_PRESET: 'dev'
+      CHAIN: '/chainspec/chainspec.json'
+      SHOW_CONFIG: 'false'
+      SIDECHAIN_BLOCK_BENEFICIARY: '04bcf7ad3be7a5c790460be82a713af570f22e0f801f6659ab8e84a52be6969e'
+    # `/health` answers before a new binary on an old chain has authored anything; asking for block
+    # #1 proves the chain is authoring.
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:6300/version']
-      interval: 10s
+      test:
+        - 'CMD-SHELL'
+        - >
+          curl -fs -H 'Content-Type: application/json' -d
+          '{"id":1,"jsonrpc":"2.0","method":"chain_getBlockHash","params":[1]}' http://localhost:9944 | grep -q
+          '"result":"0x'
+      interval: 2s
       timeout: 5s
-      retries: 20
+      retries: 200
       start_period: 10s
 
   indexer:
-    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:${INDEXER_VERSION}'
+    image: 'ghcr.io/midnight-ntwrk/indexer-standalone:${INDEXER_TAG}'
     container_name: indexer_$TESTCONTAINERS_UID
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     ports:
       - '8088:8088'
     environment:
@@ -27,8 +105,12 @@ services:
       APP__INFRA__PUB_SUB__PASSWORD: 'indexer'
       APP__INFRA__LEDGER_STATE_STORAGE__PASSWORD: 'indexer'
       APP__INFRA__SECRET: '303132333435363738393031323334353637383930313233343536373839303132'
+      # There is no SPO node here; this points the subtask at the ordinary node so it has somewhere
+      # to dial. Indexer 4.4.x exits the whole process once that subtask stops retrying, so the
+      # raised backoff cap is what keeps it alive for a session.
+      APP__INFRA__SPO_NODE__URL: 'ws://node:9944'
       APP__INFRA__SPO_NODE__BLOCKFROST_ID: 'dummy-not-using-spo'
-
+      APP__INFRA__SPO_NODE__RECONNECT_MAX_DELAY: '24h'
     healthcheck:
       test: ['CMD-SHELL', 'cat /var/run/indexer-standalone/running']
       interval: 10s
@@ -39,17 +121,49 @@ services:
       node:
         condition: service_healthy
 
-  node:
-    image: 'ghcr.io/midnight-ntwrk/midnight-node:${MIDNIGHT_NODE_VERSION}'
-    container_name: node_$TESTCONTAINERS_UID
+  # Post-fork (ledger v9) proving.
+  proof-server:
+    image: 'ghcr.io/midnight-ntwrk/proof-server:${PROOF_SERVER_TAG}'
+    container_name: proof-server_$TESTCONTAINERS_UID
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - '9944:9944'
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9944/health']
-      interval: 2s
-      timeout: 5s
-      retries: 20
-      start_period: 20s
+      - '6300:6300'
+    # Neither proof server carries a healthcheck: these images are distroless, with no shell and no
+    # curl, so any probe run inside them fails for ever. Probe `/version` from the host instead.
     environment:
-      CFG_PRESET: 'dev'
-      SIDECHAIN_BLOCK_BENEFICIARY: '04bcf7ad3be7a5c790460be82a713af570f22e0f801f6659ab8e84a52be6969e'
+      RUST_BACKTRACE: 'full'
+      EXTRA_ARGS: -v
+
+  # Pre-fork (ledger v8) proving. Runs from the start, because ledger-8 operation happens before the
+  # fork is enacted.
+  proof-server-v8:
+    image: 'ghcr.io/midnight-ntwrk/proof-server:${PROOF_SERVER_V8_TAG}'
+    container_name: proof-server-v8_$TESTCONTAINERS_UID
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - '6301:6300'
+    environment:
+      RUST_BACKTRACE: 'full'
+      EXTRA_ARGS: -v
+
+  # Never started by `up`. `yarn env:fork` drives it with `--profile tools run`, which joins the
+  # project network so `node:9944` resolves. On Docker Hub rather than ghcr, so a ghcr login does
+  # not authorize the pull — re-check the registry when bumping TOOLKIT_TAG.
+  toolkit:
+    profiles: ['tools']
+    image: 'midnightntwrk/midnight-node-toolkit:${TOOLKIT_TAG}'
+    volumes:
+      - runtime:/runtime:ro
+    environment:
+      RUST_BACKTRACE: '1'
+
+volumes:
+  chainspec:
+  runtime:
+  node-data:

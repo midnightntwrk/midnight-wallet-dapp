@@ -14,9 +14,10 @@
  */
 
 import {
+  createMidnightProvider,
+  createWalletProvider,
   ProofProvider,
   UnboundTransaction,
-  WalletProvider,
   type ZKConfigProvider,
 } from '@midnight-ntwrk/midnight-js/types';
 import {
@@ -55,7 +56,7 @@ export function createWalletProvidersFromConnectedAPI(
   console.log('[WalletAdapter] Shielded address:', shieldedAddress.shieldedAddress);
   console.log('[WalletAdapter] Unshielded address:', unshieldedAddress);
 
-  const walletProvider: WalletProvider = {
+  const walletProvider = createWalletProvider({
     getCoinPublicKey(): CoinPublicKey {
       console.log('[WalletAdapter] getCoinPublicKey called');
       return shieldedAddress.shieldedCoinPublicKey;
@@ -105,32 +106,30 @@ export function createWalletProvidersFromConnectedAPI(
         throw error;
       }
     },
-  };
+  });
 
-  const midnightProvider = {
-    async submitTx(tx: FinalizedTransaction): Promise<string> {
-      try {
-        console.log('[WalletAdapter] submitTx: Starting transaction submission');
-        const serialized = tx.serialize();
-        console.log('[WalletAdapter] submitTx: Serialized transaction length:', serialized.length);
+  const midnightProvider = createMidnightProvider(async (tx: FinalizedTransaction): Promise<string> => {
+    try {
+      console.log('[WalletAdapter] submitTx: Starting transaction submission');
+      const serialized = tx.serialize();
+      console.log('[WalletAdapter] submitTx: Serialized transaction length:', serialized.length);
 
-        const serializedStr = uint8ArrayToHex(serialized);
-        console.log('[WalletAdapter] submitTx: Converted to hex string length:', serializedStr.length);
+      const serializedStr = uint8ArrayToHex(serialized);
+      console.log('[WalletAdapter] submitTx: Converted to hex string length:', serializedStr.length);
 
-        console.log(`[WalletAdapter] submitTx: Submitting transaction to wallet: ${tx.toString()}`);
-        await connectedAPI.submitTransaction(serializedStr);
-        console.log('[WalletAdapter] submitTx: Transaction submitted successfully to wallet');
+      console.log(`[WalletAdapter] submitTx: Submitting transaction to wallet: ${tx.toString()}`);
+      await connectedAPI.submitTransaction(serializedStr);
+      console.log('[WalletAdapter] submitTx: Transaction submitted successfully to wallet');
 
-        const txId = tx.identifiers()[0];
-        console.log('[WalletAdapter] submitTx: Transaction ID:', txId);
+      const txId = tx.identifiers()[0];
+      console.log('[WalletAdapter] submitTx: Transaction ID:', txId);
 
-        return txId;
-      } catch (error) {
-        console.error('[WalletAdapter] submitTx: Error during transaction submission:', error);
-        throw error;
-      }
-    },
-  };
+      return txId;
+    } catch (error) {
+      console.error('[WalletAdapter] submitTx: Error during transaction submission:', error);
+      throw error;
+    }
+  });
 
   return { walletProvider, midnightProvider };
 }

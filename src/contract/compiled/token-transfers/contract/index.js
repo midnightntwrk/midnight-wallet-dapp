@@ -1,5 +1,5 @@
 import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
-__compactRuntime.checkRuntimeVersion('0.18.0-rc.1');
+__compactRuntime.checkRuntimeVersion('0.19.0');
 
 const _descriptor_0 = new __compactRuntime.CompactTypeBytes(32);
 
@@ -969,7 +969,7 @@ export class Contract {
                                          { ins: { cached: true, n: 2 } },
                                          { swap: { n: 0 } }]);
     }
-    if (this._equal_2(change_0, 0n)) {
+    if (change_0 === 0n) {
       return { change: this._none_0(), sent: output_0 };
     } else {
       const changeCoin_0 = { nonce:
@@ -1131,7 +1131,7 @@ export class Contract {
                                        { swap: { n: 0 } }]);
     if (recipient_0.is_left
         &&
-        this._equal_3(recipient_0.left.bytes,
+        this._equal_2(recipient_0.left.bytes,
                       _descriptor_1.fromValue(__compactRuntime.queryLedgerState(context,
                                                                                 partialProofData,
                                                                                 [
@@ -1254,7 +1254,7 @@ export class Contract {
                                        { swap: { n: 0 } }]);
     if (recipient_0.is_left
         &&
-        this._equal_4(recipient_0.left.bytes,
+        this._equal_3(recipient_0.left.bytes,
                       _descriptor_1.fromValue(__compactRuntime.queryLedgerState(context,
                                                                                 partialProofData,
                                                                                 [
@@ -1538,14 +1538,10 @@ export class Contract {
     return true;
   }
   _equal_2(x0, y0) {
-    if (x0 !== y0) { return false; }
-    return true;
-  }
-  _equal_3(x0, y0) {
     if (!x0.every((x, i) => y0[i] === x)) { return false; }
     return true;
   }
-  _equal_4(x0, y0) {
+  _equal_3(x0, y0) {
     if (!x0.every((x, i) => y0[i] === x)) { return false; }
     return true;
   }

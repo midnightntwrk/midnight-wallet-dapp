@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "env:up": "TESTCONTAINERS_UID=999 docker compose -f compose.yml up -d",
     "env:up:latest": "TESTCONTAINERS_UID=777 docker compose -f compose_latest.yml up -d",
-    "env:down": "docker compose -f compose.yml down",
+    "env:down": "docker compose -f compose.yml down -v",
+    "env:fork": "TESTCONTAINERS_UID=999 docker compose -f compose.yml --profile tools run --rm toolkit runtime-upgrade --wasm-file /runtime/midnight_node_runtime.compact.compressed.wasm -c //Dave -c //Eve -t //Alice -t //Bob --rpc-url ws://node:9944 --signer-key //Alice",
     "env:down:latest": "docker compose -f compose_latest.yml down",
     "compact": "yarn fetch-compactc && yarn contract-demo",
     "contract-demo": "yarn run-compactc src/contract/contracts/token-transfers.compact src/contract/compiled/token-transfers",
@@ -28,15 +29,15 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "0.18.0-rc.1",
-    "@midnight-ntwrk/midnight-js": "5.0.0-beta.6",
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0-beta.6",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0-beta.6",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0-beta.6",
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0-beta.6",
+    "@midnight-ntwrk/compact-runtime": "0.19.0",
+    "@midnight-ntwrk/midnight-js": "5.0.0-beta.8",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0-beta.8",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0-beta.8",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0-beta.8",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0-beta.8",
     "@midnightntwrk/dapp-connector-api": "4.1.0-beta.1",
-    "@midnightntwrk/ledger-v9": "1.0.0-rc.3",
-    "@midnightntwrk/wallet-sdk-address-format": "4.0.0-beta.2",
+    "@midnightntwrk/ledger-v9": "1.0.0-rc.4",
+    "@midnightntwrk/wallet-sdk-address-format": "4.0.0-beta.3",
     "bech32": "^2.0.0",
     "events": "^3.3.0",
     "level": "^10.0.0",
@@ -45,7 +46,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
-    "@midnight-ntwrk/midnight-js-compact": "5.0.0-beta.6",
+    "@midnight-ntwrk/midnight-js-compact": "5.0.0-beta.8",
     "@playwright/test": "^1.50.0",
     "@types/events": "^3",
     "@types/node": "^25.5.0",
@@ -73,11 +74,11 @@
     "vite-plugin-wasm": "^3.5.0"
   },
   "resolutions": {
-    "@midnight-ntwrk/compact-js": "2.5.5-rc.7",
-    "@midnight-ntwrk/compact-runtime": "0.18.0-rc.1",
+    "@midnight-ntwrk/compact-js": "2.5.5-rc.8",
+    "@midnight-ntwrk/compact-runtime": "0.19.0",
     "@midnight-ntwrk/platform-js": "3.0.0",
-    "@midnightntwrk/ledger-v9": "1.0.0-rc.3",
+    "@midnightntwrk/ledger-v9": "1.0.0-rc.4",
     "@midnightntwrk/onchain-runtime-v4": "4.0.0-rc.3",
-    "effect": "3.21.4"
+    "effect": "3.22.1"
   }
 }

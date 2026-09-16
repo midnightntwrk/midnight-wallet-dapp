@@ -32,7 +32,8 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 | `yarn build:docker`  | Build Docker image                      |
 | `yarn dapp:docker`   | Run dApp via Docker Compose (port 8080) |
 | `yarn env:up`        | Start local blockchain environment      |
-| `yarn env:down`      | Stop local blockchain environment       |
+| `yarn env:fork`      | Enact the ledger v8 -> v9 hard fork      |
+| `yarn env:down`      | Stop environment and remove its volumes |
 | `yarn test:e2e`      | Run Playwright e2e smoke tests          |
 | `yarn lint`          | Run ESLint                              |
 | `yarn lint:fix`      | Run ESLint with auto-fix                |
@@ -126,20 +127,37 @@ Access at http://localhost:8080.
 
 ## Local Blockchain Environment
 
-Start a complete local environment with proof-server, indexer, and midnight-node:
+The local stack is a **hard-fork environment**: the chain's genesis carries the ledger v8 runtime,
+but the node running it is the v9 binary. It therefore starts pre-fork, and `yarn env:fork` moves it
+across the boundary through a real governance runtime upgrade — the same shape midnight-js uses in
+`testkit-js/compose-fork.yml`.
 
 ```bash
-yarn env:up      # Start services
-yarn env:down    # Stop services
+yarn env:up      # Start services (chain comes up pre-fork, ledger v8)
+yarn env:fork    # Enact the fork; takes a few minutes
+yarn env:down    # Stop services and remove the volumes
 ```
+
+`yarn env:down` removes the volumes on purpose. The chainspec lives in one, so a plain `down` would
+resume the already-forked chain on the next start instead of giving you a fresh pre-fork one.
 
 ### Services
 
-| Service       | Port |
-| ------------- | ---- |
-| Proof Server  | 6300 |
-| Indexer       | 8088 |
-| Midnight Node | 9944 |
+| Service                 | Port | Notes                                     |
+| ----------------------- | ---- | ----------------------------------------- |
+| Proof Server (ledger 9) | 6300 | Use after the fork                        |
+| Proof Server (ledger 8) | 6301 | Use before the fork                       |
+| Indexer                 | 8088 | Serves both eras                          |
+| Midnight Node           | 9944 | v9 binary on a chain that starts pre-fork |
+
+Point the wallet at 6301 while the chain is pre-fork and at 6300 once `yarn env:fork` has run. To
+check which side of the boundary the chain is on, read the runtime spec version — `1000000` is
+pre-fork, anything higher is post-fork:
+
+```bash
+curl -s -H 'Content-Type: application/json' \
+  -d '{"id":1,"jsonrpc":"2.0","method":"state_getRuntimeVersion"}' http://localhost:9944
+```
 
 ### Prefunded wallet seed
 
@@ -176,7 +194,7 @@ This dApp is itself a test harness — wallet developers run it to exercise thei
 | Wallet not detected           | Ensure the Lace (Midnight edition) extension is installed, unlocked, and the page is refreshed. |
 | WASM-related build errors     | Run `yarn clean && yarn install` to clear caches and reinstall dependencies.                    |
 | Contract compilation fails    | Verify `COMPACTC_VERSION` is set (see `.envrc`) and run `yarn compact`.                         |
-| Local environment won't start | Ensure Docker is running and ports 6300, 8088, 9944 are not in use.                             |
+| Local environment won't start | Ensure Docker is running and ports 6300, 6301, 8088, 9944 are not in use.                       |
 | Transaction errors            | Check the Activity Log for details. Ensure the wallet is connected to the correct network.      |
 
 ## Security
