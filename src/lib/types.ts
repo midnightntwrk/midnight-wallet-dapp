@@ -15,6 +15,7 @@
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
 
 import * as CompiledOutput from '../contract/index';
+import * as RetainedOutput from '../contract/index-v8';
 import { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
 import { ProvableCircuitId } from '@midnight-ntwrk/compact-js';
 
@@ -24,7 +25,18 @@ export type DemoCircuits = ProvableCircuitId<DemoContract>;
 
 export type DemoProviders = MidnightProviders<DemoCircuits>;
 
-export const createSimpleContractInstance = (): DemoContract => new CompiledOutput.Contract({});
+/**
+ * The same source compiled with the pre-fork toolchain (compactc 0.31.1, Compact runtime 0.16.0).
+ * The retained era has no `CompiledContract` container, so its call sites take the raw instance.
+ */
+export type RetainedContract = RetainedOutput.Contract<undefined>;
+
+export const createRetainedContractInstance = (): RetainedContract => new RetainedOutput.Contract({});
+
+/** Plain string literals, unlike the current era's branded `ProvableCircuitId`s. */
+export type RetainedCircuits = keyof RetainedContract['impureCircuits'] & string;
+
+export type RetainedProviders = MidnightProviders<RetainedCircuits>;
 
 export const CompiledDemoContract = CompiledContract.make<CompiledOutput.Contract>(
   'UnshieldedDemo',

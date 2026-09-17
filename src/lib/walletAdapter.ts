@@ -14,10 +14,9 @@
  */
 
 import {
-  ProofProvider,
+  createMidnightProviderFromArms,
+  createWalletProviderFromArms,
   UnboundTransaction,
-  WalletProvider,
-  type ZKConfigProvider,
 } from '@midnight-ntwrk/midnight-js/types';
 import {
   Binding,
@@ -27,9 +26,37 @@ import {
   Proof,
   SignatureEnabled,
   Transaction,
-} from '@midnight-ntwrk/ledger-v8';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+} from '@midnightntwrk/ledger-v9';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { ShieldedAddress } from './providers';
+
+/**
+ * The transaction identifier of a retained-era transaction.
+ *
+ * The connector answers `submitTransaction` with nothing, so the id has to come from the bytes.
+ * Reading them needs the retained ledger, which is acquired here rather than imported at module
+ * scope so a session that never crosses the fork never pays for it.
+ */
+async function retainedTransactionId(txBytes: Uint8Array): Promise<string> {
+  const { Transaction: RetainedTransaction } = await import('@midnight-ntwrk/midnight-js-protocol/v8');
+  const [txId] = RetainedTransaction.deserialize('signature', 'proof', 'binding', txBytes).identifiers();
+  if (txId === undefined) {
+    throw new Error('The retained-era transaction carries no identifier, so it cannot be tracked once submitted.');
+  }
+  return txId;
+}
+
+/** Logs the seam a failure came from before rethrowing; without it a rejected arm is anonymous. */
+function traced<A extends unknown[], R>(seam: string, fn: (...args: A) => Promise<R>): (...args: A) => Promise<R> {
+  return async (...args: A) => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      console.error(`[WalletAdapter] ${seam}: failed`, error);
+      throw error;
+    }
+  };
+}
 
 export function uint8ArrayToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -45,92 +72,72 @@ export function hexToUint8Array(hex: string): Uint8Array {
 }
 
 export function createWalletProvidersFromConnectedAPI(
-  connectedAPI: ConnectedAPI,
-  proofProvider: ProofProvider,
-  zkConfigProvider: ZKConfigProvider<string>,
+  // Narrowed to the two methods the seams actually reach for, so the dependency is honest and a
+  // caller (or a test) need not stand up a whole connector.
+  connectedAPI: Pick<ConnectedAPI, 'balanceUnsealedTransaction' | 'submitTransaction'>,
   shieldedAddress: ShieldedAddress,
   unshieldedAddress: string
 ) {
-  console.log('[WalletAdapter] Creating wallet providers');
-  console.log('[WalletAdapter] Shielded address:', shieldedAddress.shieldedAddress);
-  console.log('[WalletAdapter] Unshielded address:', unshieldedAddress);
+  console.log('[WalletAdapter] Creating wallet providers for', shieldedAddress.shieldedAddress, unshieldedAddress);
 
-  const walletProvider: WalletProvider = {
+  const walletProvider = createWalletProviderFromArms({
     getCoinPublicKey(): CoinPublicKey {
-      console.log('[WalletAdapter] getCoinPublicKey called');
       return shieldedAddress.shieldedCoinPublicKey;
     },
     getEncryptionPublicKey(): EncPublicKey {
-      console.log('[WalletAdapter] getEncryptionPublicKey called');
       return shieldedAddress.shieldedEncryptionPublicKey;
     },
-    async balanceTx(tx: UnboundTransaction): Promise<FinalizedTransaction> {
-      try {
-        console.log('[WalletAdapter] balanceTx: Starting transaction balancing');
+    currentEra: traced('balanceTx', async (tx: UnboundTransaction): Promise<FinalizedTransaction> => {
+      const serializedStr = uint8ArrayToHex(tx.serialize());
+      console.log('[WalletAdapter] balanceTx: balancing, hex length:', serializedStr.length);
 
-        console.log('[WalletAdapter] balanceTx: Serializing unsealed transaction');
-        const serialized = tx.serialize();
-        console.log('[WalletAdapter] balanceTx: Serialized transaction length:', serialized.length);
+      const result = await connectedAPI.balanceUnsealedTransaction(serializedStr);
+      const resultBytes = hexToUint8Array(result.tx);
+      console.log('[WalletAdapter] balanceTx: wallet returned bytes:', resultBytes.length);
 
-        const serializedStr = uint8ArrayToHex(serialized);
-        console.log(`[WalletAdapter] balanceTx: Converted to hex string length: ${serializedStr.length}`);
-        console.log(`[WalletAdapter] balanceTx: Converted to hex string beginning128=[${serializedStr.slice(0, 128)}]`);
-        console.log(
-          `[WalletAdapter] balanceTx: as String first 128 chars: ${new TextDecoder().decode(tx.serialize()).slice(0, 128)}]`
-        );
-        console.log(`[WalletAdapter] balanceTx: toString: ${tx.toString()}]`);
-
-        console.log('[WalletAdapter] balanceTx: Balancing with wallet');
-        const result = await connectedAPI.balanceUnsealedTransaction(serializedStr);
-
-        console.log(`[WalletAdapter] balanceTx: toString: ${result.toString()}]`);
-
-        console.log('[WalletAdapter] balanceTx: Received response from wallet, tx string length:', result.tx.length);
-
-        console.log('[WalletAdapter] balanceTx: Deserializing balanced transaction');
-        const resultBytes = hexToUint8Array(result.tx);
-        console.log('[WalletAdapter] balanceTx: Converted response to Uint8Array length:', resultBytes.length);
-
-        console.log('[WalletAdapter] balanceTx: Deserializing transaction');
-        const deserializedTx = Transaction.deserialize('signature', 'proof', 'binding', resultBytes) as Transaction<
-          SignatureEnabled,
-          Proof,
-          Binding
-        >;
-        console.log('[WalletAdapter] balanceTx: Successfully deserialized transaction');
-
-        return deserializedTx;
-      } catch (error) {
-        console.error('[WalletAdapter] balanceTx: Error during transaction balancing:', error);
-        throw error;
-      }
+      return Transaction.deserialize('signature', 'proof', 'binding', resultBytes) as Transaction<
+        SignatureEnabled,
+        Proof,
+        Binding
+      >;
+    }),
+    // The retained arm never builds a ledger object: bytes go to the wallet and bytes come back.
+    // Which era the wallet deserializes them as follows from the protocol version of the chain it
+    // is on, so the connector needs no era parameter and offers none.
+    retainedEras: {
+      v8: traced('balanceTx(v8)', async (txBytes: Uint8Array): Promise<Uint8Array> => {
+        console.log('[WalletAdapter] balanceTx(v8): balancing retained-era bytes:', txBytes.length);
+        const result = await connectedAPI.balanceUnsealedTransaction(uint8ArrayToHex(txBytes));
+        return hexToUint8Array(result.tx);
+      }),
     },
-  };
+  });
 
-  const midnightProvider = {
-    async submitTx(tx: FinalizedTransaction): Promise<string> {
-      try {
-        console.log('[WalletAdapter] submitTx: Starting transaction submission');
-        const serialized = tx.serialize();
-        console.log('[WalletAdapter] submitTx: Serialized transaction length:', serialized.length);
+  const midnightProvider = createMidnightProviderFromArms({
+    currentEra: traced('submitTx', async (tx: FinalizedTransaction): Promise<string> => {
+      // Read the id before submitting: past that call the transaction is on its way, and a failure
+      // here would otherwise be reported to the user as a failed submission they should retry.
+      const [txId] = tx.identifiers();
+      if (txId === undefined) {
+        throw new Error('The transaction carries no identifier, so it cannot be tracked once submitted.');
+      }
 
-        const serializedStr = uint8ArrayToHex(serialized);
-        console.log('[WalletAdapter] submitTx: Converted to hex string length:', serializedStr.length);
+      await connectedAPI.submitTransaction(uint8ArrayToHex(tx.serialize()));
+      console.log('[WalletAdapter] submitTx: submitted', txId);
+      return txId;
+    }),
+    retainedEras: {
+      v8: traced('submitTx(v8)', async (txBytes: Uint8Array): Promise<string> => {
+        // Same ordering as the current era, and for the same reason: deserializing these bytes can
+        // fail, and after `submitTransaction` that failure is no longer the caller's to retry.
+        const txId = await retainedTransactionId(txBytes);
 
-        console.log(`[WalletAdapter] submitTx: Submitting transaction to wallet: ${tx.toString()}`);
-        await connectedAPI.submitTransaction(serializedStr);
-        console.log('[WalletAdapter] submitTx: Transaction submitted successfully to wallet');
-
-        const txId = tx.identifiers()[0];
-        console.log('[WalletAdapter] submitTx: Transaction ID:', txId);
-
+        await connectedAPI.submitTransaction(uint8ArrayToHex(txBytes));
+        console.log('[WalletAdapter] submitTx(v8): submitted', txId);
         return txId;
-      } catch (error) {
-        console.error('[WalletAdapter] submitTx: Error during transaction submission:', error);
-        throw error;
-      }
+      }),
     },
-  };
+  });
 
   return { walletProvider, midnightProvider };
 }

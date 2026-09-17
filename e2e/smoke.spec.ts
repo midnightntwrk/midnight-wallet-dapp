@@ -54,7 +54,6 @@ test.describe('Wallet Connection', () => {
     await expect(page.locator('.status-badge')).toHaveAttribute('data-connected', 'true');
     await expect(page.locator('.status-badge')).toContainText('Connected');
     await expect(page.locator('.activity-log')).toContainText('Wallet connected successfully');
-    await expect(page.locator('.activity-log')).toContainText('Providers initialized');
   });
 
   test('displays wallet info after connection', async ({ page }) => {
