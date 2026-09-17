@@ -14,29 +14,17 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  deployContract,
-  findDeployedContract,
-  type FoundContract,
-  submitCallTx,
-} from '@midnight-ntwrk/midnight-js/contracts';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
-import { buildProvidersFromConnectedAPI } from './lib/providers';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import { deploySessionContract, joinSessionContract, type ContractEra, type ContractSession } from './lib/session';
+import { HardForkPanel } from './components/HardForkPanel';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
-import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
+import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnightntwrk/wallet-sdk-address-format';
 
 import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
 import { getErrorMessage } from './utils/errors';
 
-import {
-  CompiledDemoContract,
-  createSimpleContractInstance,
-  DemoCircuits,
-  DemoContract,
-  DemoProviders,
-} from './lib/types';
 import './styles.css';
 
 export default function App() {
@@ -47,10 +35,8 @@ export default function App() {
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [customNetworkId, setCustomNetworkId] = useState<string>('');
-  const [providers, setProviders] = useState<DemoProviders | null>(null);
-
-  const [deployed, setDeployed] = useState<FoundContract<DemoContract> | null>(null);
-  const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
+  const [session, setSession] = useState<ContractSession | null>(null);
+  const [contractEra, setContractEra] = useState<ContractEra>('ledger9');
   const [joinAddress, setJoinAddress] = useState<string>('');
 
   const [mintAmount, setMintAmount] = useState<string>('10000');
@@ -112,9 +98,7 @@ export default function App() {
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
 
-      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'token-transfers');
-      setProviders(demoCircuitsMidnightProviders);
-      appendLog('Providers initialized for Mint Contract');
+      appendLog('Wallet connected; providers are built per contract era on deploy or join');
 
       try {
         const shieldedBalances = await connected.getShieldedBalances();
@@ -137,22 +121,29 @@ export default function App() {
     }
   }
 
+  function clearSession() {
+    // The provider set owns an indexer WebSocket; dropping the reference alone would leak it.
+    if (session) void session.dispose();
+    setSession(null);
+    setMintedColor('');
+    setShieldedColor(null);
+  }
+
   function onDisconnect() {
     setConnectedAPI(null);
-    setProviders(null);
+    clearSession();
     appendLog('Disconnected');
   }
 
   async function onDeploy() {
-    if (!providers) return alert('Connect wallet first');
+    if (!connectedAPI) return alert('Connect wallet first');
 
     setIsLoading(true);
     try {
-      const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
-      setDeployed(deployedContract);
-      setContractInstance(demoContractInstance);
-      appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
+      clearSession();
+      const deployed = await deploySessionContract(connectedAPI, contractEra);
+      setSession(deployed);
+      appendLog(`Deployed ${deployed.handle.era} contract at ${deployed.handle.contractAddress}`);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error deploying contract: ' + getErrorMessage(e));
@@ -163,19 +154,15 @@ export default function App() {
   }
 
   async function onJoinContract() {
-    if (!providers) return alert('Connect wallet first');
+    if (!connectedAPI) return alert('Connect wallet first');
     if (!joinAddress.trim()) return alert('Enter a contract address');
 
     setIsLoading(true);
     try {
-      const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const foundContract = await findDeployedContract(providers, {
-        compiledContract: CompiledDemoContract,
-        contractAddress: joinAddress.trim(),
-      });
-      setDeployed(foundContract);
-      setContractInstance(demoContractInstance);
-      appendLog('Joined contract at ' + foundContract.deployTxData.public.contractAddress);
+      clearSession();
+      const joined = await joinSessionContract(connectedAPI, contractEra, joinAddress.trim());
+      setSession(joined);
+      appendLog(`Joined ${joined.handle.era} contract at ${joined.handle.contractAddress}`);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error joining contract: ' + getErrorMessage(e));
@@ -186,17 +173,11 @@ export default function App() {
   }
 
   async function onMint() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'mintAndReceive' as DemoCircuits,
-        args: [BigInt(mintAmount)] as [bigint],
-      } as const;
-      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const callTxData = await session.handle.callTx.mintAndReceive(BigInt(mintAmount));
       const colorBytes32 = callTxData.private.result as Uint8Array;
       const hex = Array.from(colorBytes32)
         .map((b) => b.toString(16).padStart(2, '0'))
@@ -213,7 +194,7 @@ export default function App() {
   }
 
   async function onClaim() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
@@ -230,14 +211,7 @@ export default function App() {
 
       appendLog(`Decoded address bytes (${addressBytes.length} bytes)`);
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'sendToUser' as DemoCircuits,
-        args: [BigInt(claimAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.sendToUser(BigInt(claimAmount), { bytes: addressBytes });
       appendLog(`Claimed ${claimAmount} tokens to address ${address.unshieldedAddress}`);
     } catch (e: unknown) {
       console.error(e);
@@ -249,18 +223,11 @@ export default function App() {
   }
 
   async function onReceiveTokens() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveTokens' as DemoCircuits,
-        args: [BigInt(receiveAmount)] as [bigint],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.receiveTokens(BigInt(receiveAmount));
       appendLog(`Received ${receiveAmount} tokens`);
     } catch (e: unknown) {
       console.error(e);
@@ -272,18 +239,11 @@ export default function App() {
   }
 
   async function onDepositNight() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveNightTokens' as DemoCircuits,
-        args: [BigInt(depositNightAmount)] as [bigint],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.receiveNightTokens(BigInt(depositNightAmount));
       appendLog(`Deposited ${depositNightAmount} STAR (${Number(depositNightAmount) / 1_000_000} NIGHT)`);
     } catch (e: unknown) {
       console.error(e);
@@ -295,7 +255,7 @@ export default function App() {
   }
 
   async function onWithdrawNight() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
@@ -310,14 +270,7 @@ export default function App() {
       const decoded = bech32m.decode(address.unshieldedAddress, 1000);
       const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'sendNightTokensToUser' as DemoCircuits,
-        args: [BigInt(withdrawNightAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.sendNightTokensToUser(BigInt(withdrawNightAmount), { bytes: addressBytes });
       appendLog(
         `Withdrew ${withdrawNightAmount} STAR (${Number(withdrawNightAmount) / 1_000_000} NIGHT) to ${address.unshieldedAddress}`
       );
@@ -331,7 +284,7 @@ export default function App() {
   }
 
   async function onDepositShielded() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
     if (!shieldedColor) return alert('Mint & claim shielded tokens first to obtain a color');
 
     setIsLoading(true);
@@ -344,14 +297,7 @@ export default function App() {
         value: BigInt(shieldedDepositAmount),
       };
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveShieldedTokens' as DemoCircuits,
-        args: [coin] as [{ nonce: Uint8Array; color: Uint8Array; value: bigint }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.receiveShieldedTokens(coin);
       appendLog(`Deposited ${shieldedDepositAmount} shielded tokens`);
     } catch (e: unknown) {
       console.error(e);
@@ -363,7 +309,7 @@ export default function App() {
   }
 
   async function onMintAndClaimShielded() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+    if (!session) return alert('Deploy or join a contract first');
 
     setIsLoading(true);
     try {
@@ -383,20 +329,13 @@ export default function App() {
       const domainSep = crypto.getRandomValues(new Uint8Array(32));
       const nonce = crypto.getRandomValues(new Uint8Array(32));
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'mintAndSendShielded' as DemoCircuits,
-        args: [
-          domainSep,
-          BigInt(shieldedMintAmount),
-          nonce,
-          { bytes: publicKeyBytes },
-          BigInt(shieldedClaimAmount),
-        ] as [Uint8Array, bigint, Uint8Array, { bytes: Uint8Array }, bigint],
-      };
-
-      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const callTxData = await session.handle.callTx.mintAndSendShielded(
+        domainSep,
+        BigInt(shieldedMintAmount),
+        nonce,
+        { bytes: publicKeyBytes },
+        BigInt(shieldedClaimAmount)
+      );
       const result = callTxData.private.result as {
         change: { is_some: boolean; value: { nonce: Uint8Array; color: Uint8Array; value: bigint } };
         sent: { nonce: Uint8Array; color: Uint8Array; value: bigint };
@@ -536,13 +475,38 @@ export default function App() {
         <div className="contract-setup-grid">
           <section className="contract-card">
             <div className="contract-card-header">
+              <h3>Contract Era</h3>
+              <span className="contract-card-badge badge-secondary">{contractEra === 'ledger9' ? 'v9' : 'v8'}</span>
+            </div>
+            <div className="contract-card-content">
+              <div className="form-group">
+                <label htmlFor="contractEra">Which toolchain built the contract</label>
+                <select
+                  id="contractEra"
+                  value={contractEra}
+                  onChange={(e) => setContractEra(e.target.value as ContractEra)}
+                  className="input"
+                  disabled={!!session || isLoading}
+                >
+                  <option value="ledger9">Current (compactc 0.34.0, ledger v9)</option>
+                  <option value="ledger8">Pre-fork (compactc 0.31.1, ledger v8)</option>
+                </select>
+              </div>
+              <p className="hint">
+                A contract keeps the era it was deployed with, the fork included. Pick pre-fork to deploy on a ledger-v8
+                chain, or to call a contract that was deployed there.
+              </p>
+            </div>
+          </section>
+          <section className="contract-card">
+            <div className="contract-card-header">
               <h3>Deploy New Contract</h3>
               <span className="contract-card-badge">New</span>
             </div>
             <div className="contract-card-content">
               <button
                 onClick={onDeploy}
-                disabled={!providers || !!deployed || isLoading}
+                disabled={!connectedAPI || !!session || isLoading}
                 className="btn btn-primary btn-block"
               >
                 {isLoading ? 'Processing...' : 'Deploy Contract'}
@@ -562,12 +526,12 @@ export default function App() {
                   onChange={(e) => setJoinAddress(e.target.value)}
                   className="input"
                   placeholder="Enter contract address..."
-                  disabled={!!deployed || isLoading}
+                  disabled={!!session || isLoading}
                 />
               </div>
               <button
                 onClick={onJoinContract}
-                disabled={!providers || !joinAddress.trim() || !!deployed || isLoading}
+                disabled={!connectedAPI || !joinAddress.trim() || !!session || isLoading}
                 className="btn btn-primary btn-block"
               >
                 {isLoading ? 'Processing...' : 'Join Contract'}
@@ -575,9 +539,12 @@ export default function App() {
             </div>
           </section>
         </div>
+        <div className="contract-setup-grid">
+          <HardForkPanel connectedAPI={connectedAPI} appendLog={appendLog} />
+        </div>
         <div className="info-box" style={{ marginBottom: '1.25rem' }}>
           <span className="info-label">Contract Address:</span>
-          <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+          <code className="address">{session?.handle.contractAddress ?? '—'}</code>
         </div>
 
         {/* Token Operations */}
@@ -599,11 +566,7 @@ export default function App() {
                   placeholder="1000"
                 />
               </div>
-              <button
-                onClick={onMint}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onMint} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Mint Tokens'}
               </button>
               <div className="info-box">
@@ -626,7 +589,7 @@ export default function App() {
               </div>
               <button
                 onClick={onClaim}
-                disabled={!deployed || !mintedColor || !providers || isLoading}
+                disabled={!session || !mintedColor || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Claim Tokens'}
@@ -645,11 +608,7 @@ export default function App() {
                   placeholder="100"
                 />
               </div>
-              <button
-                onClick={onReceiveTokens}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onReceiveTokens} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Deposit Tokens'}
               </button>
             </div>
@@ -675,11 +634,7 @@ export default function App() {
                   placeholder="1500"
                 />
               </div>
-              <button
-                onClick={onDepositNight}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onDepositNight} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Deposit NIGHT'}
               </button>
 
@@ -696,11 +651,7 @@ export default function App() {
                   placeholder="500"
                 />
               </div>
-              <button
-                onClick={onWithdrawNight}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onWithdrawNight} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Withdraw NIGHT'}
               </button>
             </div>
@@ -737,7 +688,7 @@ export default function App() {
               </div>
               <button
                 onClick={onMintAndClaimShielded}
-                disabled={!deployed || !providers || isLoading}
+                disabled={!session || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Mint & Claim Shielded'}
@@ -770,7 +721,7 @@ export default function App() {
               </div>
               <button
                 onClick={onDepositShielded}
-                disabled={!deployed || !providers || !shieldedColor || isLoading}
+                disabled={!session || !shieldedColor || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Deposit Shielded'}
