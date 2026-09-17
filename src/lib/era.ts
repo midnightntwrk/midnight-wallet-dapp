@@ -13,8 +13,13 @@
  * limitations under the License.
  */
 
-import { protocolVersionToLedger } from '@midnight-ntwrk/midnight-js-protocol';
-import type { LedgerVersion, ProtocolVersionSource } from '@midnight-ntwrk/midnight-js-protocol/version';
+// The `/version` subpath rather than the package root: the root pulls in the ledger WASM at module
+// scope, and nothing here needs it.
+import {
+  protocolVersionToLedger,
+  type LedgerVersion,
+  type ProtocolVersionSource,
+} from '@midnight-ntwrk/midnight-js-protocol/version';
 
 export type NetworkEra = {
   readonly ledgerVersion: LedgerVersion;

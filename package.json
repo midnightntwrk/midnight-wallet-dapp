@@ -20,6 +20,7 @@
     "compact": "yarn fetch-compactc && yarn contract-demo",
     "contract-demo": "yarn run-compactc src/contract/contracts/token-transfers.compact src/contract/compiled/token-transfers",
     "contract-demo:retained": "node scripts/compile-retained.mjs",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -74,7 +75,8 @@
     "vite": "^7.1.12",
     "vite-plugin-static-copy": "^3.1.4",
     "vite-plugin-top-level-await": "^1.6.0",
-    "vite-plugin-wasm": "^3.5.0"
+    "vite-plugin-wasm": "^3.5.0",
+    "vitest": "^5.0.1"
   },
   "resolutions": {
     "@midnight-ntwrk/compact-js": "2.5.5-rc.8",

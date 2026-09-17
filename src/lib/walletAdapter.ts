@@ -72,7 +72,9 @@ export function hexToUint8Array(hex: string): Uint8Array {
 }
 
 export function createWalletProvidersFromConnectedAPI(
-  connectedAPI: ConnectedAPI,
+  // Narrowed to the two methods the seams actually reach for, so the dependency is honest and a
+  // caller (or a test) need not stand up a whole connector.
+  connectedAPI: Pick<ConnectedAPI, 'balanceUnsealedTransaction' | 'submitTransaction'>,
   shieldedAddress: ShieldedAddress,
   unshieldedAddress: string
 ) {
