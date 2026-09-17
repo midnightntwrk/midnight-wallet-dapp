@@ -82,10 +82,27 @@ async function withCleanup(
   try {
     return { handle: await open(), dispose };
   } catch (error) {
-    // The indexer socket is already open; a failed deploy or join must not leak it.
-    await dispose();
+    // The indexer socket is already open; a failed deploy or join must not leak it. Releasing it is
+    // reported but never rethrown: the error worth surfacing is the one that explains why the open
+    // failed, and an unguarded `await` here would replace it with a teardown error instead.
+    await dispose().catch((disposeError: unknown) => {
+      console.error('[session] could not release the providers after a failed open', disposeError);
+    });
     throw error;
   }
+}
+
+/**
+ * Refuses an era this dApp carries no artifact for.
+ *
+ * Typed `never`, so a third `PipelineEra` member arriving upstream fails to compile here rather than
+ * falling through to the retained branch and deploying a pre-fork contract under a new era's name.
+ */
+function unsupportedEra(era: never): Error {
+  return new Error(
+    `No compiled artifact for contract era "${String(era)}". Each era needs its own build of the ` +
+      'contract, so a new era needs a new artifact before it can be deployed or joined.'
+  );
 }
 
 /**
@@ -99,8 +116,13 @@ export async function deploySessionContract(connectedAPI: ConnectedAPI, era: Con
     const { providers, dispose } = await currentEraProviders(connectedAPI);
     return withCleanup(dispose, () => deployContract(providers, { compiledContract: CompiledDemoContract }));
   }
-  const { providers, dispose } = await retainedEraProviders(connectedAPI);
-  return withCleanup(dispose, () => deployContract(providers, { compiledContract: createRetainedContractInstance() }));
+  if (era === 'ledger8') {
+    const { providers, dispose } = await retainedEraProviders(connectedAPI);
+    return withCleanup(dispose, () =>
+      deployContract(providers, { compiledContract: createRetainedContractInstance() })
+    );
+  }
+  throw unsupportedEra(era);
 }
 
 export async function joinSessionContract(
@@ -114,8 +136,11 @@ export async function joinSessionContract(
       findDeployedContract(providers, { compiledContract: CompiledDemoContract, contractAddress })
     );
   }
-  const { providers, dispose } = await retainedEraProviders(connectedAPI);
-  return withCleanup(dispose, () =>
-    findDeployedContract(providers, { compiledContract: createRetainedContractInstance(), contractAddress })
-  );
+  if (era === 'ledger8') {
+    const { providers, dispose } = await retainedEraProviders(connectedAPI);
+    return withCleanup(dispose, () =>
+      findDeployedContract(providers, { compiledContract: createRetainedContractInstance(), contractAddress })
+    );
+  }
+  throw unsupportedEra(era);
 }

@@ -155,14 +155,20 @@ resume the already-forked chain on the next start instead of giving you a fresh 
 
 | Service                 | Port | Notes                                     |
 | ----------------------- | ---- | ----------------------------------------- |
-| Proof Server (ledger 9) | 6300 | Use after the fork                        |
-| Proof Server (ledger 8) | 6301 | Use before the fork                       |
+| Proof Server (ledger 9) | 6300 | Proves ledger-v9 contracts                |
+| Proof Server (ledger 8) | 6301 | Proves ledger-v8 contracts, fork included |
 | Indexer                 | 8088 | Serves both eras                          |
 | Midnight Node           | 9944 | v9 binary on a chain that starts pre-fork |
 
-Point the wallet at 6301 while the chain is pre-fork and at 6300 once `yarn env:fork` has run. To
-check which side of the boundary the chain is on, read the runtime spec version — `1000000` is
-pre-fork, anything higher is post-fork:
+Point the wallet at the proof server for the era of the **contract you are calling**, not for the
+side of the fork the chain is on: 6301 for a ledger-v8 contract, 6300 for a ledger-v9 one. A contract
+deployed before the fork keeps being proved at 6301 after it, which is the whole point of the
+retained artifact. The dApp builds one proof provider from whatever `proverServerUri` the wallet
+reports, so switching contract era means switching the wallet's proof-server setting and
+reconnecting.
+
+To check which side of the boundary the chain is on, read the runtime spec version — `1000000`
+through `1999999` is pre-fork, `2000000` and above is post-fork:
 
 ```bash
 curl -s -H 'Content-Type: application/json' \

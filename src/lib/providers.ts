@@ -35,6 +35,21 @@ export type ShieldedAddress = {
 };
 
 /**
+ * Only the connector methods a provider set reaches for: the three read here, plus the two the
+ * wallet seams call. Narrowed the same way `createWalletProvidersFromConnectedAPI` narrows its own
+ * parameter, so the dependency is honest and a caller — or a test — need not stand up a whole
+ * connector.
+ */
+export type ProviderConnector = Pick<
+  ConnectedAPI,
+  | 'getConfiguration'
+  | 'getShieldedAddresses'
+  | 'getUnshieldedAddress'
+  | 'balanceUnsealedTransaction'
+  | 'submitTransaction'
+>;
+
+/**
  * A provider set together with the cleanup its indexer connection needs.
  *
  * `indexerPublicDataProvider` opens a WebSocket and an Apollo client; the generic
@@ -58,7 +73,7 @@ export type ProviderBundle<K extends string> = {
  * artifact however intact it is.
  */
 export async function buildProvidersFromConnectedAPI<K extends string = DemoCircuits>(
-  connectedAPI: ConnectedAPI,
+  connectedAPI: ProviderConnector,
   contractName: string,
   integrity: ZkArtifactIntegrityMode = 'require'
 ): Promise<ProviderBundle<K>> {
@@ -74,56 +89,70 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
     subscriptionURL: config.indexerWsUri,
   });
 
-  const baseQueryZSwapAndContractState = publicDataProvider.queryZSwapAndContractState.bind(publicDataProvider);
-  publicDataProvider.queryZSwapAndContractState = async (
-    contractAddress: ContractAddress,
-    queryConfig?: BlockHeightConfig | BlockHashConfig
-  ) => {
-    const result = await baseQueryZSwapAndContractState(contractAddress, queryConfig);
-    if (!result) return result;
+  // Past this point the provider owns a WebSocket and an Apollo client, but the caller has no way to
+  // release them until this function returns the disposer. Every failure in between — a wallet with
+  // no proof server set, a locked wallet, unavailable storage — must therefore release them here, or
+  // each retry by a user fixing their wallet strands another connection.
+  try {
+    const baseQueryZSwapAndContractState = publicDataProvider.queryZSwapAndContractState.bind(publicDataProvider);
+    publicDataProvider.queryZSwapAndContractState = async (
+      contractAddress: ContractAddress,
+      queryConfig?: BlockHeightConfig | BlockHashConfig
+    ) => {
+      const result = await baseQueryZSwapAndContractState(contractAddress, queryConfig);
+      if (!result) return result;
 
-    const [zswapChainState, contractState, ledgerParameters] = result;
-    return [
-      zswapChainState.postBlockUpdate(new Date(), ZSWAP_MERKLE_ROOT_RETENTION_SECONDS),
-      contractState,
-      ledgerParameters,
-    ] as typeof result;
-  };
+      const [zswapChainState, contractState, ledgerParameters] = result;
+      return [
+        zswapChainState.postBlockUpdate(new Date(), ZSWAP_MERKLE_ROOT_RETENTION_SECONDS),
+        contractState,
+        ledgerParameters,
+      ] as typeof result;
+    };
 
-  if (config.proverServerUri === undefined) {
-    throw new Error(
-      'The connected wallet did not supply a proof-server URL (proverServerUri). Set the proof ' +
-        'server in the wallet — port 6301 before the fork, 6300 after it — and reconnect.'
+    if (config.proverServerUri === undefined) {
+      throw new Error(
+        'The connected wallet did not supply a proof-server URL (proverServerUri). Set the proof ' +
+          'server in the wallet — port 6301 for a ledger-v8 contract, 6300 for a ledger-v9 one — ' +
+          'and reconnect.'
+      );
+    }
+    const proofProvider = httpClientProofProvider({ url: config.proverServerUri, zkConfigProvider });
+
+    // TODO: switch to connectedAPI.getProvingProvider once implemented in dapp-connector
+
+    const shieldedAddress: ShieldedAddress = await connectedAPI.getShieldedAddresses();
+    const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
+
+    const { walletProvider, midnightProvider } = createWalletProvidersFromConnectedAPI(
+      connectedAPI,
+      shieldedAddress,
+      unshieldedAddress.unshieldedAddress
     );
+
+    // For demo purposes only, we use a simple password provider that returns a fixed password.
+    const privateStateProvider = levelPrivateStateProvider({
+      privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',
+      accountId: shieldedAddress.shieldedAddress,
+    });
+
+    return {
+      providers: {
+        privateStateProvider,
+        publicDataProvider,
+        zkConfigProvider,
+        proofProvider,
+        walletProvider,
+        midnightProvider,
+      },
+      dispose: () => publicDataProvider.dispose(),
+    };
+  } catch (error) {
+    // Reported, never rethrown: the error worth surfacing is the one that explains why the set could
+    // not be built, not a failure to tidy up after it.
+    await publicDataProvider.dispose().catch((disposeError: unknown) => {
+      console.error('[providers] could not release the indexer after a failed build', disposeError);
+    });
+    throw error;
   }
-  const proofProvider = httpClientProofProvider({ url: config.proverServerUri, zkConfigProvider });
-
-  // TODO: switch to connectedAPI.getProvingProvider once implemented in dapp-connector
-
-  const shieldedAddress: ShieldedAddress = await connectedAPI.getShieldedAddresses();
-  const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
-
-  const { walletProvider, midnightProvider } = createWalletProvidersFromConnectedAPI(
-    connectedAPI,
-    shieldedAddress,
-    unshieldedAddress.unshieldedAddress
-  );
-
-  // For demo purposes only, we use a simple password provider that returns a fixed password.
-  const privateStateProvider = levelPrivateStateProvider({
-    privateStoragePasswordProvider: () => 'Midnight-demo-app-storage-password!',
-    accountId: shieldedAddress.shieldedAddress,
-  });
-
-  return {
-    providers: {
-      privateStateProvider,
-      publicDataProvider,
-      zkConfigProvider,
-      proofProvider,
-      walletProvider,
-      midnightProvider,
-    },
-    dispose: () => publicDataProvider.dispose(),
-  };
 }
