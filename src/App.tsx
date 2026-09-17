@@ -15,13 +15,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
-import {
-  buildSessionProviders,
-  deploySessionContract,
-  joinSessionContract,
-  type ContractEra,
-  type ContractSession,
-} from './lib/session';
+import { deploySessionContract, joinSessionContract, type ContractEra, type ContractSession } from './lib/session';
 import { HardForkPanel } from './components/HardForkPanel';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
@@ -127,9 +121,17 @@ export default function App() {
     }
   }
 
+  function clearSession() {
+    // The provider set owns an indexer WebSocket; dropping the reference alone would leak it.
+    if (session) void session.dispose();
+    setSession(null);
+    setMintedColor('');
+    setShieldedColor(null);
+  }
+
   function onDisconnect() {
     setConnectedAPI(null);
-    setSession(null);
+    clearSession();
     appendLog('Disconnected');
   }
 
@@ -138,10 +140,10 @@ export default function App() {
 
     setIsLoading(true);
     try {
-      const providers = await buildSessionProviders(connectedAPI, contractEra);
-      const deployed = await deploySessionContract(providers, contractEra);
+      clearSession();
+      const deployed = await deploySessionContract(connectedAPI, contractEra);
       setSession(deployed);
-      appendLog(`Deployed ${contractEra} contract at ${deployed.handle.contractAddress}`);
+      appendLog(`Deployed ${deployed.handle.era} contract at ${deployed.handle.contractAddress}`);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error deploying contract: ' + getErrorMessage(e));
@@ -157,10 +159,10 @@ export default function App() {
 
     setIsLoading(true);
     try {
-      const providers = await buildSessionProviders(connectedAPI, contractEra);
-      const joined = await joinSessionContract(providers, contractEra, joinAddress.trim());
+      clearSession();
+      const joined = await joinSessionContract(connectedAPI, contractEra, joinAddress.trim());
       setSession(joined);
-      appendLog(`Joined ${contractEra} contract at ${joined.handle.contractAddress}`);
+      appendLog(`Joined ${joined.handle.era} contract at ${joined.handle.contractAddress}`);
     } catch (e: unknown) {
       console.error(e);
       appendLog('Error joining contract: ' + getErrorMessage(e));

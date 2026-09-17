@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
 import { readNetworkEra, type NetworkEra } from '../lib/era';
-import { buildSessionProviders } from '../lib/session';
 import { getErrorMessage } from '../utils/errors';
 
 type Props = {
@@ -25,16 +25,17 @@ type Props = {
   readonly appendLog: (message: string) => void;
 };
 
-/**
- * Which side of the ledger fork the network head is on.
- *
- * Read rather than assumed, and re-read on demand: the answer is wrong exactly at the boundary,
- * which is where it matters. It does not decide which artifact a contract is called with — that
- * follows from the contract — but it does say whether a pre-fork deploy is still possible.
- */
 export function HardForkPanel({ connectedAPI, appendLog }: Props) {
   const [era, setEra] = useState<NetworkEra | null>(null);
   const [isReading, setIsReading] = useState<boolean>(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const refreshEra = useCallback(async () => {
     if (connectedAPI === null) {
@@ -42,15 +43,33 @@ export function HardForkPanel({ connectedAPI, appendLog }: Props) {
       return;
     }
     setIsReading(true);
+    // Only the indexer is needed to read the head, so only the indexer is built. It owns a
+    // WebSocket and an Apollo client, hence the disposal: this runs on mount and on every click.
+    let publicDataProvider;
     try {
-      const providers = await buildSessionProviders(connectedAPI, 'ledger9');
-      const read = await readNetworkEra(providers.publicDataProvider);
+      const config = await connectedAPI.getConfiguration();
+      publicDataProvider = indexerPublicDataProvider({
+        queryURL: config.indexerUri,
+        subscriptionURL: config.indexerWsUri,
+      });
+    } catch (error: unknown) {
+      console.error('[HardForkPanel] could not reach the indexer', error);
+      appendLog('Could not reach the indexer to read the network era: ' + getErrorMessage(error));
+      if (isMounted.current) setIsReading(false);
+      return;
+    }
+
+    try {
+      const read = await readNetworkEra(publicDataProvider);
+      if (!isMounted.current) return;
       setEra(read);
       appendLog(`Network head is ${read.ledgerVersion} (protocol version ${read.protocolVersion})`);
     } catch (error: unknown) {
+      console.error('[HardForkPanel] could not read the network era', error);
       appendLog('Could not read the network era: ' + getErrorMessage(error));
     } finally {
-      setIsReading(false);
+      await publicDataProvider.dispose();
+      if (isMounted.current) setIsReading(false);
     }
   }, [connectedAPI, appendLog]);
 
@@ -73,7 +92,8 @@ export function HardForkPanel({ connectedAPI, appendLog }: Props) {
         </div>
         <p className="hint">
           Pre-fork heads report <code>v8</code>. After <code>yarn env:fork</code> the head reports <code>v9</code>, and
-          a contract deployed before the boundary keeps being called through its pre-fork artifact.
+          a contract deployed before the boundary keeps being called through its pre-fork artifact. This card is
+          informational — it does not restrict which era you can deploy.
         </p>
         <button
           onClick={refreshEra}

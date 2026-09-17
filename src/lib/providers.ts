@@ -21,7 +21,8 @@ import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits } from './types';
-import type { MidnightProviders, ZkConfigIntegrityMode } from './types';
+import type { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
+import type { ZkArtifactIntegrityMode } from '@midnight-ntwrk/midnight-js/utils';
 import { type BlockHashConfig, type BlockHeightConfig } from '@midnight-ntwrk/midnight-js/types';
 import { type ContractAddress } from '@midnightntwrk/ledger-v9';
 
@@ -31,6 +32,18 @@ export type ShieldedAddress = {
   shieldedAddress: string;
   shieldedCoinPublicKey: string;
   shieldedEncryptionPublicKey: string;
+};
+
+/**
+ * A provider set together with the cleanup its indexer connection needs.
+ *
+ * `indexerPublicDataProvider` opens a WebSocket and an Apollo client; the generic
+ * `PublicDataProvider` interface does not expose `dispose()`, so the concrete handle is captured
+ * here rather than being recovered with a cast at the call site.
+ */
+export type ProviderBundle<K extends string> = {
+  readonly providers: MidnightProviders<K>;
+  readonly dispose: () => Promise<void>;
 };
 
 /**
@@ -47,8 +60,8 @@ export type ShieldedAddress = {
 export async function buildProvidersFromConnectedAPI<K extends string = DemoCircuits>(
   connectedAPI: ConnectedAPI,
   contractName: string,
-  integrity: ZkConfigIntegrityMode = 'require'
-): Promise<MidnightProviders<K>> {
+  integrity: ZkArtifactIntegrityMode = 'require'
+): Promise<ProviderBundle<K>> {
   const zkConfigHttpBase = window.location.origin + '/contract/compiled/' + contractName;
   const zkConfigProvider = new FetchZkConfigProvider<K>(zkConfigHttpBase, {
     fetchFunc: fetch.bind(window),
@@ -56,7 +69,10 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
   });
 
   const config = await connectedAPI.getConfiguration();
-  const publicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
+  const publicDataProvider = indexerPublicDataProvider({
+    queryURL: config.indexerUri,
+    subscriptionURL: config.indexerWsUri,
+  });
 
   const baseQueryZSwapAndContractState = publicDataProvider.queryZSwapAndContractState.bind(publicDataProvider);
   publicDataProvider.queryZSwapAndContractState = async (
@@ -74,7 +90,13 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
     ] as typeof result;
   };
 
-  const proofProvider = httpClientProofProvider({ url: config.proverServerUri!, zkConfigProvider });
+  if (config.proverServerUri === undefined) {
+    throw new Error(
+      'The connected wallet did not supply a proof-server URL (proverServerUri). Set the proof ' +
+        'server in the wallet — port 6301 before the fork, 6300 after it — and reconnect.'
+    );
+  }
+  const proofProvider = httpClientProofProvider({ url: config.proverServerUri, zkConfigProvider });
 
   // TODO: switch to connectedAPI.getProvingProvider once implemented in dapp-connector
 
@@ -83,8 +105,6 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
 
   const { walletProvider, midnightProvider } = createWalletProvidersFromConnectedAPI(
     connectedAPI,
-    proofProvider,
-    zkConfigProvider,
     shieldedAddress,
     unshieldedAddress.unshieldedAddress
   );
@@ -96,11 +116,14 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
   });
 
   return {
-    privateStateProvider,
-    publicDataProvider,
-    zkConfigProvider,
-    proofProvider,
-    walletProvider,
-    midnightProvider,
+    providers: {
+      privateStateProvider,
+      publicDataProvider,
+      zkConfigProvider,
+      proofProvider,
+      walletProvider,
+      midnightProvider,
+    },
+    dispose: () => publicDataProvider.dispose(),
   };
 }

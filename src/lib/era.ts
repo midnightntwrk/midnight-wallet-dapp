@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-import { networkHeadVersion } from '@midnight-ntwrk/midnight-js-protocol';
-import type { LedgerVersion } from '@midnight-ntwrk/midnight-js-protocol/version';
-import type { PublicDataProvider } from '@midnight-ntwrk/midnight-js/types';
+import { protocolVersionToLedger } from '@midnight-ntwrk/midnight-js-protocol';
+import type { LedgerVersion, ProtocolVersionSource } from '@midnight-ntwrk/midnight-js-protocol/version';
 
 export type NetworkEra = {
   readonly ledgerVersion: LedgerVersion;
@@ -25,14 +24,11 @@ export type NetworkEra = {
 /**
  * Which side of the ledger fork the network head is on.
  *
- * Read on every call rather than cached: the answer is wrong exactly at the boundary, which is
- * where it matters. `networkHeadVersion` maps the protocol version onto the era timeline, so a
- * version this client cannot place raises rather than being silently treated as current.
+ * One read, one mapping: `ledgerVersion` is derived from the `protocolVersion` returned beside it,
+ * so the two cannot disagree if the head advances mid-read. `protocolVersionToLedger` raises on a
+ * version this client cannot place rather than silently treating it as current.
  */
-export async function readNetworkEra(publicDataProvider: PublicDataProvider): Promise<NetworkEra> {
-  const [ledgerVersion, protocolVersion] = await Promise.all([
-    networkHeadVersion(publicDataProvider),
-    publicDataProvider.queryLatestProtocolVersion(),
-  ]);
-  return { ledgerVersion, protocolVersion };
+export async function readNetworkEra(source: ProtocolVersionSource): Promise<NetworkEra> {
+  const protocolVersion = await source.queryLatestProtocolVersion();
+  return { ledgerVersion: protocolVersionToLedger(protocolVersion, 'construct'), protocolVersion };
 }

@@ -9,6 +9,10 @@ A minimal React + Vite starter template for building decentralized applications 
 - **Lace Wallet** (Midnight edition) installed and unlocked in your browser
 - Access to a Midnight test environment (QANet, Preview, PreProd, or local)
 - Optional: Docker for containerized deployment
+- **[direnv](https://direnv.net/)** if you use the local stack. `compose.yml` interpolates the image
+  tags exported by `.envrc` (`NODE_TAG`, `INDEXER_TAG`, `PROOF_SERVER_TAG`, …); without them loaded
+  into your shell, `yarn env:up` resolves every image to a blank tag and the pull fails. Run
+  `direnv allow` once, or `source .envrc` in the shell you run `yarn env:*` from.
 - Optional: `COMPACTC_VERSION` env var for contract compilation (set via `.envrc`)
 
 ## Quick Start
@@ -57,15 +61,20 @@ src/
 │   └── useActivityLog.ts       # Activity log management hook
 ├── utils/
 │   └── errors.ts               # Error message extraction utility
+├── components/
+│   └── HardForkPanel.tsx       # Network Era card
 ├── lib/
 │   ├── providers.ts            # MidnightJS provider factory
+│   ├── session.ts              # Era-tagged contract session (deploy/join)
+│   ├── era.ts                  # Network-head era reading
 │   ├── walletAdapter.ts        # Wallet DApp connector adapter
 │   ├── types.ts                # Contract type definitions
 │   └── crypto-shim.ts          # Crypto module shimming for browser
 └── contract/
     ├── contracts/               # Compact contract source (.compact)
     ├── compiled/                # Compiled artifacts (keys, zkir, modules)
-    └── index.ts                 # Contract import wrapper
+    ├── index.ts                 # Contract import wrapper (current era)
+    └── index-v8.ts              # Contract import wrapper (retained era)
 ```
 
 ## Technology Stack
@@ -174,9 +183,10 @@ it with `yarn contract-demo:retained`; the script also repoints its generated mo
 runtime copy (`compact-runtime-ledger8`), because a browser bundle has one install where midnight-js
 uses one per era.
 
-**Every circuit works in both eras.** Pick the era in the **Contract Era** selector before deploying or
-joining; from then on the contract carries it, and all eight circuit buttons behave the same way on either
-side of the boundary. A contract keeps the era it was deployed with for life — the network head decides
+**Both eras share one call surface.** Pick the era in the **Contract Era** selector before deploying or
+joining; from then on the contract carries it, and the seven circuit buttons behave the same way on either
+side of the boundary. (`sendShieldedToUser` and `mintShieldedToSelf` are compiled into both artifacts but
+have no UI, so they are exercised by neither era.) A contract keeps the era it was deployed with for life — the network head decides
 which pipeline runs underneath, which is the framework's business rather than the dApp's.
 
 That works because both eras publish `callTx` as one typed method per circuit, and both artifacts are built
@@ -186,10 +196,13 @@ from the same source, so a union of the two handles is callable directly:
 await session.handle.callTx.mintAndReceive(amount); // type-checks against both eras at once
 ```
 
-No era branching appears in any handler. The only place the era is named is deploy and join.
+No era branching appears in any circuit handler; the era is named only at deploy and join, plus the
+selector that feeds them.
 
-The **Network Era** card reads which side of the boundary the chain is on (`v8` before the fork, `v9`
-after `yarn env:fork`), so a pre-fork deploy is never attempted against a forked chain by accident.
+The **Network Era** card reports which side of the boundary the chain is on (`v8` before the fork, `v9`
+after `yarn env:fork`). It is informational only — the Contract Era selector is not gated by it, so read
+the card before choosing a pre-fork deploy. The framework still refuses a genuinely impossible pairing,
+but it does so at deploy time rather than in the UI.
 
 ### Prefunded wallet seed
 

@@ -18,19 +18,18 @@ import {
   findDeployedContract,
   Ledger8,
   type FoundContract,
+  type PipelineEra,
 } from '@midnight-ntwrk/midnight-js/contracts';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
-import { buildProvidersFromConnectedAPI } from './providers';
+import { buildProvidersFromConnectedAPI, type ProviderBundle } from './providers';
 import {
   CompiledDemoContract,
   createRetainedContractInstance,
   type DemoCircuits,
   type DemoContract,
-  type DemoProviders,
   type RetainedCircuits,
   type RetainedContract,
-  type RetainedProviders,
 } from './types';
 
 const CURRENT_ARTIFACT = 'token-transfers';
@@ -42,8 +41,11 @@ const RETAINED_ARTIFACT = 'token-transfers-v8';
  * A property of the CONTRACT, not of the network: one deployed before the fork is called with the
  * retained artifact for the rest of its life, the boundary included. Which pipeline runs underneath
  * is decided by the network head, and that is the framework's business rather than ours.
+ *
+ * Aliased from the framework rather than re-declared, so a new era cannot arrive without this dApp
+ * failing to compile.
  */
-export type ContractEra = 'ledger9' | 'ledger8';
+export type ContractEra = PipelineEra;
 
 /**
  * A contract handle of either era.
@@ -54,44 +56,66 @@ export type ContractEra = 'ledger9' | 'ledger8';
  */
 export type ContractHandle = FoundContract<DemoContract> | Ledger8.FoundContract<RetainedContract>;
 
+/**
+ * The era is read off `handle.era`, which the framework already tags; a second copy could drift.
+ * `dispose` releases the indexer WebSocket the provider set owns.
+ */
 export type ContractSession = {
-  readonly era: ContractEra;
-  readonly providers: DemoProviders | RetainedProviders;
   readonly handle: ContractHandle;
+  readonly dispose: () => Promise<void>;
 };
 
-export const buildSessionProviders = async (connectedAPI: ConnectedAPI, era: ContractEra) =>
-  era === 'ledger9'
-    ? await buildProvidersFromConnectedAPI<DemoCircuits>(connectedAPI, CURRENT_ARTIFACT)
-    : // `warn`: compactc 0.31.1 emits no `contract-manifest.json`, and integrity verification reads
-      // exactly that file, so the fail-closed default refuses every pre-fork artifact.
-      await buildProvidersFromConnectedAPI<RetainedCircuits>(connectedAPI, RETAINED_ARTIFACT, 'warn');
+const currentEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle<DemoCircuits>> =>
+  buildProvidersFromConnectedAPI<DemoCircuits>(connectedAPI, CURRENT_ARTIFACT);
 
-export async function deploySessionContract(
-  providers: DemoProviders | RetainedProviders,
-  era: ContractEra
+// `require-if-present`: compactc 0.31.1 emits no `contract-manifest.json`, and verification reads
+// exactly that file, so the fail-closed default refuses every pre-fork artifact. This mode skips the
+// check when there is no manifest, but still fails on one that does not certify the artifact.
+const retainedEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle<RetainedCircuits>> =>
+  buildProvidersFromConnectedAPI<RetainedCircuits>(connectedAPI, RETAINED_ARTIFACT, 'require-if-present');
+
+/** Opens a contract with an already-built provider set, releasing it if opening fails. */
+async function withCleanup(
+  dispose: () => Promise<void>,
+  open: () => Promise<ContractHandle>
 ): Promise<ContractSession> {
-  const handle =
-    era === 'ledger9'
-      ? await deployContract(providers as DemoProviders, { compiledContract: CompiledDemoContract })
-      : await deployContract(providers as RetainedProviders, { compiledContract: createRetainedContractInstance() });
-  return { era, providers, handle };
+  try {
+    return { handle: await open(), dispose };
+  } catch (error) {
+    // The indexer socket is already open; a failed deploy or join must not leak it.
+    await dispose();
+    throw error;
+  }
+}
+
+/**
+ * The provider set is never handed back to the caller alongside a separate era value. Pairing the
+ * two at a call site is what would let a ledger-9 set open a ledger-8 contract, and structural
+ * typing does not reject that pairing — a ledger-9 set satisfies the ledger-8 provider type.
+ * Building and using them inside one branch removes the opportunity entirely.
+ */
+export async function deploySessionContract(connectedAPI: ConnectedAPI, era: ContractEra): Promise<ContractSession> {
+  if (era === 'ledger9') {
+    const { providers, dispose } = await currentEraProviders(connectedAPI);
+    return withCleanup(dispose, () => deployContract(providers, { compiledContract: CompiledDemoContract }));
+  }
+  const { providers, dispose } = await retainedEraProviders(connectedAPI);
+  return withCleanup(dispose, () => deployContract(providers, { compiledContract: createRetainedContractInstance() }));
 }
 
 export async function joinSessionContract(
-  providers: DemoProviders | RetainedProviders,
+  connectedAPI: ConnectedAPI,
   era: ContractEra,
   contractAddress: string
 ): Promise<ContractSession> {
-  const handle =
-    era === 'ledger9'
-      ? await findDeployedContract(providers as DemoProviders, {
-          compiledContract: CompiledDemoContract,
-          contractAddress,
-        })
-      : await findDeployedContract(providers as RetainedProviders, {
-          compiledContract: createRetainedContractInstance(),
-          contractAddress,
-        });
-  return { era, providers, handle };
+  if (era === 'ledger9') {
+    const { providers, dispose } = await currentEraProviders(connectedAPI);
+    return withCleanup(dispose, () =>
+      findDeployedContract(providers, { compiledContract: CompiledDemoContract, contractAddress })
+    );
+  }
+  const { providers, dispose } = await retainedEraProviders(connectedAPI);
+  return withCleanup(dispose, () =>
+    findDeployedContract(providers, { compiledContract: createRetainedContractInstance(), contractAddress })
+  );
 }

@@ -17,7 +17,6 @@ import { CompiledContract } from '@midnight-ntwrk/compact-js';
 import * as CompiledOutput from '../contract/index';
 import * as RetainedOutput from '../contract/index-v8';
 import { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
-import type { ZkArtifactIntegrityMode } from '@midnight-ntwrk/midnight-js/utils';
 import { ProvableCircuitId } from '@midnight-ntwrk/compact-js';
 
 export type DemoContract = CompiledOutput.Contract<undefined>;
@@ -25,11 +24,6 @@ export type DemoContract = CompiledOutput.Contract<undefined>;
 export type DemoCircuits = ProvableCircuitId<DemoContract>;
 
 export type DemoProviders = MidnightProviders<DemoCircuits>;
-
-export type { MidnightProviders };
-export type ZkConfigIntegrityMode = ZkArtifactIntegrityMode;
-
-export const createSimpleContractInstance = (): DemoContract => new CompiledOutput.Contract({});
 
 /**
  * The same source compiled with the pre-fork toolchain (compactc 0.31.1, Compact runtime 0.16.0).
