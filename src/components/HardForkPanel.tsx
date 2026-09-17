@@ -14,22 +14,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  deployContract,
-  findDeployedContract,
-  isLedger8Result,
-  submitCallTx,
-} from '@midnight-ntwrk/midnight-js/contracts';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
-import { buildProvidersFromConnectedAPI } from '../lib/providers';
 import { readNetworkEra, type NetworkEra } from '../lib/era';
-import { createRetainedContractInstance, type RetainedCircuits, type RetainedProviders } from '../lib/types';
+import { buildSessionProviders } from '../lib/session';
 import { getErrorMessage } from '../utils/errors';
-
-const RETAINED_ARTIFACT = 'token-transfers-v8';
-const RETAINED_CIRCUIT = 'mintAndReceive';
-const RETAINED_MINT_AMOUNT = 10_000n;
 
 type Props = {
   readonly connectedAPI: ConnectedAPI | null;
@@ -37,148 +26,61 @@ type Props = {
 };
 
 /**
- * The ledger v8 -> v9 crossing, driven by hand.
+ * Which side of the ledger fork the network head is on.
  *
- * Deploy while the chain is pre-fork, enact the fork outside the dApp (`yarn env:fork`), then call
- * the same contract again. The post-fork call is the keep-state path: an ordinary current-era
- * transaction carrying a retained-era call, which is why it needs no separate call site here.
+ * Read rather than assumed, and re-read on demand: the answer is wrong exactly at the boundary,
+ * which is where it matters. It does not decide which artifact a contract is called with — that
+ * follows from the contract — but it does say whether a pre-fork deploy is still possible.
  */
 export function HardForkPanel({ connectedAPI, appendLog }: Props) {
-  const [providers, setProviders] = useState<RetainedProviders | null>(null);
   const [era, setEra] = useState<NetworkEra | null>(null);
-  const [contractAddress, setContractAddress] = useState<string>('');
-  const [joined, setJoined] = useState<boolean>(false);
-  const [isBusy, setIsBusy] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (connectedAPI === null) {
-      setProviders(null);
-      return;
-    }
-    let cancelled = false;
-    buildProvidersFromConnectedAPI<RetainedCircuits>(connectedAPI, RETAINED_ARTIFACT, 'warn')
-      .then((built) => {
-        if (!cancelled) setProviders(built);
-      })
-      .catch((error: unknown) => appendLog('Retained providers failed: ' + getErrorMessage(error)));
-    return () => {
-      cancelled = true;
-    };
-  }, [connectedAPI, appendLog]);
+  const [isReading, setIsReading] = useState<boolean>(false);
 
   const refreshEra = useCallback(async () => {
-    if (providers === null) return;
+    if (connectedAPI === null) {
+      setEra(null);
+      return;
+    }
+    setIsReading(true);
     try {
+      const providers = await buildSessionProviders(connectedAPI, 'ledger9');
       const read = await readNetworkEra(providers.publicDataProvider);
       setEra(read);
       appendLog(`Network head is ${read.ledgerVersion} (protocol version ${read.protocolVersion})`);
     } catch (error: unknown) {
       appendLog('Could not read the network era: ' + getErrorMessage(error));
+    } finally {
+      setIsReading(false);
     }
-  }, [providers, appendLog]);
+  }, [connectedAPI, appendLog]);
 
   useEffect(() => {
     void refreshEra();
   }, [refreshEra]);
 
-  const run = async (label: string, action: () => Promise<void>) => {
-    setIsBusy(true);
-    try {
-      await action();
-    } catch (error: unknown) {
-      console.error(error);
-      appendLog(`${label} failed: ` + getErrorMessage(error));
-    } finally {
-      setIsBusy(false);
-      void refreshEra();
-    }
-  };
-
-  const onDeployRetained = () =>
-    run('Pre-fork deploy', async () => {
-      if (providers === null) return;
-      const deployed = await deployContract(providers, {
-        compiledContract: createRetainedContractInstance(),
-      });
-      setContractAddress(deployed.contractAddress);
-      setJoined(true);
-      appendLog(`Deployed pre-fork contract at ${deployed.contractAddress}`);
-    });
-
-  const onJoinRetained = () =>
-    run('Pre-fork join', async () => {
-      if (providers === null) return;
-      const found = await findDeployedContract(providers, {
-        compiledContract: createRetainedContractInstance(),
-        contractAddress,
-      });
-      setJoined(true);
-      appendLog(`Joined pre-fork contract at ${found.contractAddress}`);
-    });
-
-  const onCallRetained = () =>
-    run('Pre-fork contract call', async () => {
-      if (providers === null) return;
-      const result = await submitCallTx(providers, {
-        compiledContract: createRetainedContractInstance(),
-        contractAddress,
-        circuitId: RETAINED_CIRCUIT,
-        args: [RETAINED_MINT_AMOUNT],
-      });
-      const pipeline = isLedger8Result(result) ? 'retained pipeline' : 'current pipeline';
-      appendLog(
-        `Called ${RETAINED_CIRCUIT} via the ${pipeline}; recorded on ${result.public.version}, tx ${result.public.txId}`
-      );
-    });
-
-  const preFork = era?.ledgerVersion === 'v8';
-
   return (
     <section className="contract-card">
       <div className="contract-card-header">
-        <h3>Hard fork (ledger v8 → v9)</h3>
+        <h3>Network Era</h3>
         <span className="contract-card-badge badge-secondary">{era?.ledgerVersion ?? '—'}</span>
       </div>
       <div className="contract-card-content">
         <div className="info-box">
-          <span className="info-label">Network head:</span>
+          <span className="info-label">Head:</span>
           <code className="address">
             {era === null ? 'unknown' : `${era.ledgerVersion} (protocol ${era.protocolVersion})`}
           </code>
         </div>
-
+        <p className="hint">
+          Pre-fork heads report <code>v8</code>. After <code>yarn env:fork</code> the head reports <code>v9</code>, and
+          a contract deployed before the boundary keeps being called through its pre-fork artifact.
+        </p>
         <button
-          onClick={onDeployRetained}
-          disabled={providers === null || !preFork || isBusy}
-          className="btn btn-primary btn-block"
-        >
-          {isBusy ? 'Processing...' : 'Deploy pre-fork contract'}
-        </button>
-
-        <div className="form-group">
-          <input
-            type="text"
-            value={contractAddress}
-            onChange={(e) => setContractAddress(e.target.value)}
-            className="input"
-            placeholder="Pre-fork contract address..."
-            disabled={isBusy}
-          />
-        </div>
-        <button
-          onClick={onJoinRetained}
-          disabled={providers === null || contractAddress.trim() === '' || isBusy}
+          onClick={refreshEra}
+          disabled={connectedAPI === null || isReading}
           className="btn btn-outline btn-block"
         >
-          {isBusy ? 'Processing...' : 'Join pre-fork contract'}
-        </button>
-
-        <button
-          onClick={onCallRetained}
-          disabled={providers === null || !joined || isBusy}
-          className="btn btn-accent btn-block"
-        >
-          {isBusy ? 'Processing...' : `Call ${RETAINED_CIRCUIT} on the pre-fork contract`}
+          {isReading ? 'Reading...' : 'Re-read network era'}
         </button>
       </div>
     </section>

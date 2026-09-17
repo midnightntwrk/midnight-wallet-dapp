@@ -174,17 +174,22 @@ it with `yarn contract-demo:retained`; the script also repoints its generated mo
 runtime copy (`compact-runtime-ledger8`), because a browser bundle has one install where midnight-js
 uses one per era.
 
-The **Hard fork** panel in the UI drives the crossing:
+**Every circuit works in both eras.** Pick the era in the **Contract Era** selector before deploying or
+joining; from then on the contract carries it, and all eight circuit buttons behave the same way on either
+side of the boundary. A contract keeps the era it was deployed with for life — the network head decides
+which pipeline runs underneath, which is the framework's business rather than the dApp's.
 
-1. **Deploy pre-fork contract** — enabled only while the network head is on ledger v8.
-2. `yarn env:fork` — enact the fork from the terminal.
-3. **Call `mintAndReceive` on the pre-fork contract** — the keep-state path. After the fork this is an
-   ordinary current-era transaction carrying a retained-era call, so it crosses the wallet seams
-   exactly as any v9 transaction does.
+That works because both eras publish `callTx` as one typed method per circuit, and both artifacts are built
+from the same source, so a union of the two handles is callable directly:
 
-The panel reads the head era on every action and shows it, so which side of the boundary you are on is
-never a guess. Note that pre-fork proving needs the ledger-8 proof server on 6301 and post-fork the
-ledger-9 one on 6300.
+```ts
+await session.handle.callTx.mintAndReceive(amount); // type-checks against both eras at once
+```
+
+No era branching appears in any handler. The only place the era is named is deploy and join.
+
+The **Network Era** card reads which side of the boundary the chain is on (`v8` before the fork, `v9`
+after `yarn env:fork`), so a pre-fork deploy is never attempted against a forked chain by accident.
 
 ### Prefunded wallet seed
 
