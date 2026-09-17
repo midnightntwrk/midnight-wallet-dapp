@@ -22,6 +22,7 @@ import {
 } from '@midnight-ntwrk/midnight-js/contracts';
 import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { buildProvidersFromConnectedAPI } from './lib/providers';
+import { HardForkPanel } from './components/HardForkPanel';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
 
@@ -569,6 +570,9 @@ export default function App() {
               </button>
             </div>
           </section>
+        </div>
+        <div className="contract-setup-grid">
+          <HardForkPanel connectedAPI={connectedAPI} appendLog={appendLog} />
         </div>
         <div className="info-box" style={{ marginBottom: '1.25rem' }}>
           <span className="info-label">Contract Address:</span>

@@ -20,7 +20,8 @@ import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
-import { DemoCircuits, DemoProviders } from './types';
+import { DemoCircuits } from './types';
+import type { MidnightProviders, ZkConfigIntegrityMode } from './types';
 import { type BlockHashConfig, type BlockHeightConfig } from '@midnight-ntwrk/midnight-js/types';
 import { type ContractAddress } from '@midnightntwrk/ledger-v9';
 
@@ -32,13 +33,26 @@ export type ShieldedAddress = {
   shieldedEncryptionPublicKey: string;
 };
 
-export async function buildProvidersFromConnectedAPI(
+/**
+ * Builds the provider set for one compiled artifact.
+ *
+ * Generic in the circuit-id type because the two eras name their circuits differently: compact-js
+ * brands the current era's ids, while the retained era uses plain literals. One provider set typed
+ * for the other era's ids does not satisfy the call sites.
+ *
+ * `integrity` exists for the retained artifact: compactc 0.31.1 emits no `contract-manifest.json`,
+ * and verification reads exactly that file, so the default `'require'` refuses every pre-fork
+ * artifact however intact it is.
+ */
+export async function buildProvidersFromConnectedAPI<K extends string = DemoCircuits>(
   connectedAPI: ConnectedAPI,
-  contractName: string
-): Promise<DemoProviders> {
+  contractName: string,
+  integrity: ZkConfigIntegrityMode = 'require'
+): Promise<MidnightProviders<K>> {
   const zkConfigHttpBase = window.location.origin + '/contract/compiled/' + contractName;
-  const zkConfigProvider = new FetchZkConfigProvider<DemoCircuits>(zkConfigHttpBase, {
+  const zkConfigProvider = new FetchZkConfigProvider<K>(zkConfigHttpBase, {
     fetchFunc: fetch.bind(window),
+    verify: integrity,
   });
 
   const config = await connectedAPI.getConfiguration();

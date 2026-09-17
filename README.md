@@ -29,6 +29,7 @@ Open http://localhost:5173 and click **Connect Lace (Midnight)**.
 | `yarn preview`       | Preview production build                |
 | `yarn compact`       | Compile Compact contracts               |
 | `yarn contract-demo` | Generate contract build artifacts       |
+| `yarn contract-demo:retained` | Build the pre-fork (ledger v8) twin |
 | `yarn build:docker`  | Build Docker image                      |
 | `yarn dapp:docker`   | Run dApp via Docker Compose (port 8080) |
 | `yarn env:up`        | Start local blockchain environment      |
@@ -158,6 +159,32 @@ pre-fork, anything higher is post-fork:
 curl -s -H 'Content-Type: application/json' \
   -d '{"id":1,"jsonrpc":"2.0","method":"state_getRuntimeVersion"}' http://localhost:9944
 ```
+
+### Crossing the fork
+
+The dApp carries **two** builds of the same `.compact` source:
+
+| Artifact | Toolchain | Era |
+| --- | --- | --- |
+| `src/contract/compiled/token-transfers` | compactc 0.34.0, runtime 0.19.0 | current (ledger v9) |
+| `src/contract/compiled/token-transfers-v8` | compactc 0.31.1, runtime 0.16.0 | retained (ledger v8) |
+
+The retained twin is what makes a contract deployed *before* the fork still callable *after* it. Build
+it with `yarn contract-demo:retained`; the script also repoints its generated module at the retained
+runtime copy (`compact-runtime-ledger8`), because a browser bundle has one install where midnight-js
+uses one per era.
+
+The **Hard fork** panel in the UI drives the crossing:
+
+1. **Deploy pre-fork contract** — enabled only while the network head is on ledger v8.
+2. `yarn env:fork` — enact the fork from the terminal.
+3. **Call `mintAndReceive` on the pre-fork contract** — the keep-state path. After the fork this is an
+   ordinary current-era transaction carrying a retained-era call, so it crosses the wallet seams
+   exactly as any v9 transaction does.
+
+The panel reads the head era on every action and shows it, so which side of the boundary you are on is
+never a guess. Note that pre-fork proving needs the ledger-8 proof server on 6301 and post-fork the
+ledger-9 one on 6300.
 
 ### Prefunded wallet seed
 
