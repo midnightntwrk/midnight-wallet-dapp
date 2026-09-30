@@ -430,7 +430,8 @@ export default function App() {
           </div>
         </section>
 
-        {/* Contract Section */}
+        {/* Era — which ledger the contract speaks, and where the network head is. Read these
+            before opening a contract: they decide which artifact a deploy or join must use. */}
         <div className="contract-setup-grid">
           <section className="contract-card">
             <div className="contract-card-header">
@@ -457,6 +458,10 @@ export default function App() {
               </p>
             </div>
           </section>
+          <HardForkPanel connectedAPI={connectedAPI} appendLog={appendLog} />
+        </div>
+        {/* Open a contract */}
+        <div className="contract-setup-grid">
           <section className="contract-card">
             <div className="contract-card-header">
               <h3>Deploy New Contract</h3>
@@ -497,9 +502,6 @@ export default function App() {
               </button>
             </div>
           </section>
-        </div>
-        <div className="contract-setup-grid">
-          <HardForkPanel connectedAPI={connectedAPI} appendLog={appendLog} />
         </div>
         <div className="info-box" style={{ marginBottom: '1.25rem' }}>
           <span className="info-label">Contract Address:</span>
