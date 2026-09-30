@@ -128,11 +128,11 @@ export default function App() {
   }
 
   /**
-   * Runs one user action: raises the loading flag for its duration, and on failure reports it once —
-   * to the console, the activity log and the user — rather than in nine identical catch blocks.
+   * Runs one user action: raises the loading flag for its duration, and on failure reports it in one
+   * place — to the console, the activity log and the user.
    *
-   * `what` is the action as an infinitive phrase ("mint tokens"); it was the only part that differed
-   * between those blocks. Guards belong OUTSIDE the call, so a refused action never raises the flag.
+   * `what` is the action as an infinitive phrase ("mint tokens"), so log and alert read alike. Guards
+   * belong OUTSIDE the call, so a refused action never raises the flag.
    */
   async function runAction(what: string, action: () => Promise<void>) {
     setIsLoading(true);
@@ -161,8 +161,15 @@ export default function App() {
   }
 
   function clearSession() {
-    // The provider set owns an indexer WebSocket; dropping the reference alone would leak it.
-    if (session) void session.dispose();
+    // The provider set owns an indexer WebSocket; dropping the reference alone would leak it. The
+    // rejection is caught here rather than left to float: this runs inside `runAction`, but `void`
+    // detaches the promise, so an unguarded failure would surface as an unhandled rejection and reach
+    // neither the activity log nor the user.
+    if (session) {
+      void session.dispose().catch((error: unknown) => {
+        console.error('[App] could not release the providers when clearing the session', error);
+      });
+    }
     setSession(null);
     setMintedColor('');
     setShieldedColor(null);
@@ -278,6 +285,12 @@ export default function App() {
 
     void runAction('mint & claim shielded', async () => {
       const { shieldedCoinPublicKey } = await connectedAPI.getShieldedAddresses();
+      // Typed as a required string, but it crosses an extension boundary. Without this the empty and
+      // undefined cases reach bech32 and are reported as "bech32.decode input: string expected",
+      // which names a library the user has never heard of instead of the wallet.
+      if (!shieldedCoinPublicKey) {
+        throw new Error('the connected wallet supplied no shielded coin public key');
+      }
 
       // shieldedCoinPublicKey is bech32m-encoded (per dapp-connector API spec) — decode to raw 32 bytes
       const publicKeyBytes = new Uint8Array(

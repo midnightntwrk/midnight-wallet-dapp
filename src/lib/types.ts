@@ -37,9 +37,11 @@ export const createRetainedContractInstance = (): RetainedContract => new Retain
 /**
  * Plain string literals, unlike the current era's branded `ProvableCircuitId`s.
  *
- * Taken from the framework's own alias rather than derived here: the retained era's circuit-id type
- * is the framework's to define, and a second derivation can disagree with it silently — as this one
- * did while it read `impureCircuits`.
+ * Taken from the framework's own alias rather than derived here. This artifact's `impureCircuits` and
+ * `provableCircuits` declare the same nine keys, so deriving it locally off either one produces the
+ * same type today — which is exactly why a divergence would go unnoticed. The framework keys its
+ * retained circuit ids off `provableCircuits`; borrowing its alias means an artifact whose two maps
+ * differ can no longer leave this dApp naming circuits the framework cannot run.
  */
 export type RetainedCircuits = Ledger8.CircuitId<RetainedContract>;
 
