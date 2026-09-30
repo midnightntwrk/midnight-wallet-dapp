@@ -21,6 +21,7 @@ import {
   type PipelineEra,
 } from '@midnight-ntwrk/midnight-js/contracts';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
+import type { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
 
 import { buildProvidersFromConnectedAPI, type ProviderBundle } from './providers';
 import {
@@ -74,24 +75,6 @@ const currentEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle
 const retainedEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle<RetainedCircuits>> =>
   buildProvidersFromConnectedAPI<RetainedCircuits>(connectedAPI, RETAINED_ARTIFACT, 'require-if-present');
 
-/** Opens a contract with an already-built provider set, releasing it if opening fails. */
-async function withCleanup(
-  dispose: () => Promise<void>,
-  open: () => Promise<ContractHandle>
-): Promise<ContractSession> {
-  try {
-    return { handle: await open(), dispose };
-  } catch (error) {
-    // The indexer socket is already open; a failed deploy or join must not leak it. Releasing it is
-    // reported but never rethrown: the error worth surfacing is the one that explains why the open
-    // failed, and an unguarded `await` here would replace it with a teardown error instead.
-    await dispose().catch((disposeError: unknown) => {
-      console.error('[session] could not release the providers after a failed open', disposeError);
-    });
-    throw error;
-  }
-}
-
 /**
  * Refuses an era this dApp carries no artifact for.
  *
@@ -106,41 +89,69 @@ function unsupportedEra(era: never): Error {
 }
 
 /**
- * The provider set is never handed back to the caller alongside a separate era value. Pairing the
- * two at a call site is what would let a ledger-9 set open a ledger-8 contract, and structural
- * typing does not reject that pairing — a ledger-9 set satisfies the ledger-8 provider type.
- * Building and using them inside one branch removes the opportunity entirely.
+ * Opens a contract with a provider set built for its era, releasing the set if opening fails.
+ *
+ * The indexer socket is already open by then, so a failed deploy or join must not leak it. Releasing
+ * it is reported but never rethrown: the error worth surfacing is the one that explains why the open
+ * failed, and an unguarded `await` here would replace it with a teardown error instead.
  */
-export async function deploySessionContract(connectedAPI: ConnectedAPI, era: ContractEra): Promise<ContractSession> {
+async function withCleanup(
+  dispose: () => Promise<void>,
+  open: () => Promise<ContractHandle>
+): Promise<ContractSession> {
+  try {
+    return { handle: await open(), dispose };
+  } catch (error) {
+    await dispose().catch((disposeError: unknown) => {
+      console.error('[session] could not release the providers after a failed open', disposeError);
+    });
+    throw error;
+  }
+}
+
+/**
+ * The one place an era is dispatched, so a new `PipelineEra` member has one branch to add rather
+ * than one per entry point — and one `unsupportedEra` guard to fall through, rather than two that
+ * can drift apart.
+ *
+ * `open` names an opener per era instead of handing a caller a provider set and an era value side by
+ * side. Pairing those two at a call site is what would let a ledger-9 set open a ledger-8 contract,
+ * and structural typing does not reject it — a ledger-9 set satisfies the ledger-8 provider type.
+ * Each set is built and consumed inside its own branch here, so the opportunity never arises.
+ */
+async function openSession(
+  connectedAPI: ConnectedAPI,
+  era: ContractEra,
+  open: {
+    readonly ledger9: (providers: MidnightProviders<DemoCircuits>) => Promise<ContractHandle>;
+    readonly ledger8: (providers: MidnightProviders<RetainedCircuits>) => Promise<ContractHandle>;
+  }
+): Promise<ContractSession> {
   if (era === 'ledger9') {
     const { providers, dispose } = await currentEraProviders(connectedAPI);
-    return withCleanup(dispose, () => deployContract(providers, { compiledContract: CompiledDemoContract }));
+    return withCleanup(dispose, () => open.ledger9(providers));
   }
   if (era === 'ledger8') {
     const { providers, dispose } = await retainedEraProviders(connectedAPI);
-    return withCleanup(dispose, () =>
-      deployContract(providers, { compiledContract: createRetainedContractInstance() })
-    );
+    return withCleanup(dispose, () => open.ledger8(providers));
   }
   throw unsupportedEra(era);
 }
 
-export async function joinSessionContract(
+export const deploySessionContract = (connectedAPI: ConnectedAPI, era: ContractEra): Promise<ContractSession> =>
+  openSession(connectedAPI, era, {
+    ledger9: (providers) => deployContract(providers, { compiledContract: CompiledDemoContract }),
+    ledger8: (providers) => deployContract(providers, { compiledContract: createRetainedContractInstance() }),
+  });
+
+export const joinSessionContract = (
   connectedAPI: ConnectedAPI,
   era: ContractEra,
   contractAddress: string
-): Promise<ContractSession> {
-  if (era === 'ledger9') {
-    const { providers, dispose } = await currentEraProviders(connectedAPI);
-    return withCleanup(dispose, () =>
-      findDeployedContract(providers, { compiledContract: CompiledDemoContract, contractAddress })
-    );
-  }
-  if (era === 'ledger8') {
-    const { providers, dispose } = await retainedEraProviders(connectedAPI);
-    return withCleanup(dispose, () =>
-      findDeployedContract(providers, { compiledContract: createRetainedContractInstance(), contractAddress })
-    );
-  }
-  throw unsupportedEra(era);
-}
+): Promise<ContractSession> =>
+  openSession(connectedAPI, era, {
+    ledger9: (providers) =>
+      findDeployedContract(providers, { compiledContract: CompiledDemoContract, contractAddress }),
+    ledger8: (providers) =>
+      findDeployedContract(providers, { compiledContract: createRetainedContractInstance(), contractAddress }),
+  });

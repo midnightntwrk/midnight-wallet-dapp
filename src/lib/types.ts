@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import type { Ledger8 } from '@midnight-ntwrk/midnight-js/contracts';
 
 import * as CompiledOutput from '../contract/index';
 import * as RetainedOutput from '../contract/index-v8';
@@ -33,8 +34,14 @@ export type RetainedContract = RetainedOutput.Contract<undefined>;
 
 export const createRetainedContractInstance = (): RetainedContract => new RetainedOutput.Contract({});
 
-/** Plain string literals, unlike the current era's branded `ProvableCircuitId`s. */
-export type RetainedCircuits = keyof RetainedContract['impureCircuits'] & string;
+/**
+ * Plain string literals, unlike the current era's branded `ProvableCircuitId`s.
+ *
+ * Taken from the framework's own alias rather than derived here: the retained era's circuit-id type
+ * is the framework's to define, and a second derivation can disagree with it silently — as this one
+ * did while it read `impureCircuits`.
+ */
+export type RetainedCircuits = Ledger8.CircuitId<RetainedContract>;
 
 export type RetainedProviders = MidnightProviders<RetainedCircuits>;
 
