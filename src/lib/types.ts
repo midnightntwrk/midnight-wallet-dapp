@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import type { Ledger8 } from '@midnight-ntwrk/midnight-js/contracts';
 
 import * as CompiledOutput from '../contract/index';
 import * as RetainedOutput from '../contract/index-v8';
@@ -33,8 +34,16 @@ export type RetainedContract = RetainedOutput.Contract<undefined>;
 
 export const createRetainedContractInstance = (): RetainedContract => new RetainedOutput.Contract({});
 
-/** Plain string literals, unlike the current era's branded `ProvableCircuitId`s. */
-export type RetainedCircuits = keyof RetainedContract['impureCircuits'] & string;
+/**
+ * Plain string literals, unlike the current era's branded `ProvableCircuitId`s.
+ *
+ * Taken from the framework's own alias rather than derived here. This artifact's `impureCircuits` and
+ * `provableCircuits` declare the same nine keys, so deriving it locally off either one produces the
+ * same type today — which is exactly why a divergence would go unnoticed. The framework keys its
+ * retained circuit ids off `provableCircuits`; borrowing its alias means an artifact whose two maps
+ * differ can no longer leave this dApp naming circuits the framework cannot run.
+ */
+export type RetainedCircuits = Ledger8.CircuitId<RetainedContract>;
 
 export type RetainedProviders = MidnightProviders<RetainedCircuits>;
 
