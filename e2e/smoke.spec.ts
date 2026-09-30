@@ -78,3 +78,53 @@ test.describe('Wallet Connection', () => {
     await expect(page.locator('.activity-log')).toContainText('Disconnected');
   });
 });
+
+// The closest the contract path gets to testable without a chain: no indexer, no proof server and no
+// funded wallet are involved in deciding whether an action is reachable at all. These pin the button
+// gating, which is what actually stops a user calling a circuit before there is a contract to call.
+test.describe('Contract action gating', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(injectMockWalletScript());
+  });
+
+  test('offers deploy only once a wallet is connected', async ({ page }) => {
+    await page.goto('/');
+    const deploy = page.locator('button:has-text("Deploy Contract")');
+
+    await expect(deploy).toBeDisabled();
+
+    await page.click('button:has-text("Connect Wallet")');
+    await expect(page.locator('.status-badge')).toContainText('Connected');
+    await expect(deploy).toBeEnabled();
+  });
+
+  test('refuses every circuit call while no contract is open', async ({ page }) => {
+    await page.goto('/');
+    await page.click('button:has-text("Connect Wallet")');
+    await expect(page.locator('.status-badge')).toContainText('Connected');
+
+    // A connected wallet is not enough: each of these needs a deployed or joined contract, and the
+    // contract address stays blank until there is one.
+    const contractAddress = page.locator('.info-box', { hasText: 'Contract Address:' }).locator('code.address');
+    await expect(contractAddress).toHaveText('—');
+    // Every circuit-call button, found by the class they share rather than by label, so a new one
+    // added to either card is covered without editing this test.
+    const circuitButtons = page.locator('button.btn-accent');
+    const count = await circuitButtons.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(circuitButtons.nth(i)).toBeDisabled();
+    }
+  });
+
+  test('keeps the era selector answerable before anything is deployed', async ({ page }) => {
+    await page.goto('/');
+    await page.click('button:has-text("Connect Wallet")');
+
+    // Both eras must remain offered: which one a user needs depends on when their contract was
+    // deployed, not on where the network head is.
+    const options = await page.locator('select#contractEra option').allTextContents();
+    expect(options.join(' ')).toContain('ledger v9');
+    expect(options.join(' ')).toContain('ledger v8');
+  });
+});
