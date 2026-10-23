@@ -47,6 +47,14 @@ const CONTRACT_ADDRESS = '0200aabb';
 /** The only way to reach the defensive branch: `ContractEra` has no third member to pass honestly. */
 const UNKNOWN_ERA = 'ledger10' as ContractEra;
 
+// The markers the `./types` mock stands in for. Asserted on, rather than merely passed through,
+// because pairing an era's provider set with the OTHER era's contract is the failure this dispatch
+// exists to prevent, and it is not one a reader of the call site can see: the two openers are
+// identical, so only these assertions pin which contract each era actually receives.
+const PROVIDERS = { marker: 'providers' };
+const CURRENT_CONTRACT = { marker: 'current' };
+const RETAINED_CONTRACT = { marker: 'retained' };
+
 describe('era dispatch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -59,12 +67,34 @@ describe('era dispatch', () => {
     await deploySessionContract(connectedAPI, 'ledger9');
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
+    expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: CURRENT_CONTRACT });
   });
 
   test('deploys the retained era against the pre-fork artifact, waiving the absent manifest', async () => {
     await deploySessionContract(connectedAPI, 'ledger8');
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
+    expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: RETAINED_CONTRACT });
+  });
+
+  test('joins the current era through the current artifact, at the address asked for', async () => {
+    await joinSessionContract(connectedAPI, 'ledger9', CONTRACT_ADDRESS);
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
+    expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
+      compiledContract: CURRENT_CONTRACT,
+      contractAddress: CONTRACT_ADDRESS,
+    });
+  });
+
+  test('joins the retained era through the pre-fork artifact, at the address asked for', async () => {
+    await joinSessionContract(connectedAPI, 'ledger8', CONTRACT_ADDRESS);
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
+    expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
+      compiledContract: RETAINED_CONTRACT,
+      contractAddress: CONTRACT_ADDRESS,
+    });
   });
 
   test('refuses an era it cannot place rather than deploying the pre-fork artifact', async () => {

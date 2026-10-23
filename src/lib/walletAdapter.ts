@@ -14,8 +14,8 @@
  */
 
 import {
-  createMidnightProviderFromArms,
-  createWalletProviderFromArms,
+  createMidnightProviderFromHandlers,
+  createWalletProviderFromHandlers,
   UnboundTransaction,
 } from '@midnight-ntwrk/midnight-js/types';
 import {
@@ -80,7 +80,7 @@ export function createWalletProvidersFromConnectedAPI(
 ) {
   console.log('[WalletAdapter] Creating wallet providers for', shieldedAddress.shieldedAddress, unshieldedAddress);
 
-  const walletProvider = createWalletProviderFromArms({
+  const walletProvider = createWalletProviderFromHandlers({
     getCoinPublicKey(): CoinPublicKey {
       return shieldedAddress.shieldedCoinPublicKey;
     },
@@ -113,7 +113,7 @@ export function createWalletProvidersFromConnectedAPI(
     },
   });
 
-  const midnightProvider = createMidnightProviderFromArms({
+  const midnightProvider = createMidnightProviderFromHandlers({
     currentEra: traced('submitTx', async (tx: FinalizedTransaction): Promise<string> => {
       // Read the id before submitting: past that call the transaction is on its way, and a failure
       // here would otherwise be reported to the user as a failed submission they should retry.
