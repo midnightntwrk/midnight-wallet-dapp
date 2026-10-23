@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Compact compiler output. The flagged hex strings are expectedVk - verifier-key hashes, public by construction: verifier keys are published on-chain at contract deploy. Generated from public Compact source, which cannot embed witness secrets."
+paths = ['''^src/contract/compiled/[^/]+/contract/index\.js$''']
