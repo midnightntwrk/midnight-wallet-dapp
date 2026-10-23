@@ -1,4 +1,5 @@
 name: License Header Check
+permissions: {}
 
 on:
   push:
@@ -11,10 +12,14 @@ jobs:
   license-header:
     name: Check License Headers
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  #v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check License Headers
         uses: apache/skywalking-eyes/header@a196742f472feaffafea537ce5a2a4c3c53a8de4 # main
