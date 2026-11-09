@@ -1,5 +1,5 @@
 import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
-__compactRuntime.checkRuntimeVersion('0.20.0');
+__compactRuntime.checkRuntimeVersion('0.21.0');
 
 const _descriptor_0 = new __compactRuntime.CompactTypeBytes(32);
 
@@ -1585,15 +1585,15 @@ const _emptyContext = {
 const _dummyContract = new Contract({ });
 export const pureCircuits = {};
 export const expectedVk = {
-  'mintAndReceive': '0c4f166863b845424af6be9292167a2ae3a634cfb57db7733c00ed933dfb8858',
-  'mintAndSendShielded': '82317ecc58eaab0ba9a40b17ad76ec74f9ca28939693c2e5d8c6c940c49ee1d2',
-  'mintShieldedToSelf': '1a9e98974f1ab6f87cf5585051b001488d0e7f11e755afef426b15ba53d83a5e',
-  'receiveNightTokens': '33e57b6ffe3dbd3510b93a38a599bc582b43513c73d0dc591969d0d680d90d4f',
-  'receiveShieldedTokens': '079f937462bd68c6164b9435d70a8507144e59188cf65e95637e42b9b772daec',
-  'receiveTokens': 'e68cb9a3ceb744370656b86bb8f9477998972ac570bb8c797a63e6b5dfc9004e',
-  'sendNightTokensToUser': 'f6b8fb7bcb07fca13f90c7c7e5125a561164daaeca60f36c282156920b7e45be',
-  'sendShieldedToUser': 'd45475e1c0952fe4a0dd5c83366c72257ba65d949634f72ce6ae6420808f8734',
-  'sendToUser': '5a5e20ef0a2a0546c07f0306aef6ab6646ff72150d9de26038835ab45ea801ef',
+  'mintAndReceive': '86d5335a7056f4b2791fc1553a2f284c3cfc237d093536906fc12201d46cd363',
+  'mintAndSendShielded': 'ce73ee7db66b8bd290b3ae9be05ad7c060463b76872909c04276423778c9193c',
+  'mintShieldedToSelf': 'f15df42f0bb13b0b9cce29a88c691a0f9fc0a515d95e91d41f5ea9ea3b05d0c9',
+  'receiveNightTokens': 'cbde295ab5a2e46cd24200ad68bf1f887dbcf4b6548eda53f85b5289db7cc759',
+  'receiveShieldedTokens': '6326c17e1ec0f08a0f020ce7773ee00b9712ee52982f2bf9a7675a5de5d7c13a',
+  'receiveTokens': '528791517aba5e236c0b0eb74aa98237e2972e68e06dcc711d435e08d11ec960',
+  'sendNightTokensToUser': '6571faf177d8da6f21f664b2d26ea7099846af66762b6cb6048a7110916dcfa5',
+  'sendShieldedToUser': '54a49b62cc9dc7a654965d730aef1316995a686e40765b668aaa70443d088220',
+  'sendToUser': 'e8416dd604db6000c6dcf58d0d18cae47fffd61f11866db6bf31b88fe5d4084f',
 };
 
 export const circuitSignatures = {

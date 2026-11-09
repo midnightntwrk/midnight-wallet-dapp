@@ -15,6 +15,7 @@
 
 import { createReadStream, existsSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
+import { createRequire } from 'node:module';
 import { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,33 @@ const CIRCUITS = [
   'mintShieldedToSelf',
   'mintAndSendShielded',
 ] as const;
+
+/**
+ * The version of an installed Compact runtime, read from the package itself.
+ *
+ * Asserted against rather than written as a literal: midnight-js places an artifact on a ledger era
+ * by the `runtime-version` its compiler recorded, so an artifact built against one runtime and a
+ * dApp installing another is refused at deploy — and a literal here passes while that is true.
+ *
+ * @param specifier The runtime an era's artifacts are paired with: the current era installs
+ * `@midnight-ntwrk/compact-runtime`, the retained twin the `compact-runtime-ledger8` alias.
+ */
+function installedRuntimeVersion(specifier: string): string {
+  const manifest: unknown = JSON.parse(
+    readFileSync(createRequire(import.meta.url).resolve(`${specifier}/package.json`), 'utf8')
+  );
+  if (typeof manifest !== 'object' || manifest === null || !('version' in manifest)) {
+    throw new Error(`${specifier} declares no version, so the pairing cannot be checked`);
+  }
+  const { version } = manifest;
+  if (typeof version !== 'string') {
+    throw new Error(`${specifier} declares a non-string version`);
+  }
+  return version;
+}
+
+/** The part of a runtime version that decides the era: everything before the patch. */
+const majorMinor = (version: string): string => version.split('.').slice(0, 2).join('.');
 
 /** Flips one byte of whatever this path serves, to prove verification is not vacuous. */
 let corrupt: string | undefined;
@@ -75,10 +103,10 @@ const providerFor = (artifact: string, verify: 'require' | 'require-if-present')
   new FetchZkConfigProvider<string>(`${origin}/${artifact}`, { verify });
 
 describe('current-era artifact', () => {
-  test('declares the runtime its compiler is paired with', async () => {
+  test('declares the runtime this dApp actually installs', async () => {
     const runtimeVersion = await providerFor('token-transfers', 'require').getArtifactRuntimeVersion();
 
-    expect(runtimeVersion).toBe('0.20.0');
+    expect(majorMinor(runtimeVersion)).toBe(majorMinor(installedRuntimeVersion('@midnight-ntwrk/compact-runtime')));
   });
 
   test('serves every circuit a verifier key the manifest vouches for', async () => {
@@ -102,10 +130,10 @@ describe('current-era artifact', () => {
 });
 
 describe('retained-era artifact', () => {
-  test('declares the pre-fork runtime, which the current one cannot run', async () => {
+  test('declares the pre-fork runtime this dApp keeps installed beside the current one', async () => {
     const runtimeVersion = await providerFor('token-transfers-v8', 'require-if-present').getArtifactRuntimeVersion();
 
-    expect(runtimeVersion).toBe('0.16.0');
+    expect(majorMinor(runtimeVersion)).toBe(majorMinor(installedRuntimeVersion('compact-runtime-ledger8')));
   });
 
   test('serves every circuit a verifier key once the absent manifest is waived', async () => {

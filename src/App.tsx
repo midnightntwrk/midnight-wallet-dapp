@@ -431,7 +431,7 @@ export default function App() {
                   className="input"
                   disabled={!!session || isLoading}
                 >
-                  <option value="v9">Current (compactc 0.35.0, ledger v9)</option>
+                  <option value="v9">Current (compactc 0.36.0, ledger v9)</option>
                   <option value="v8">Pre-fork (compactc 0.31.1, ledger v8)</option>
                 </select>
               </div>
