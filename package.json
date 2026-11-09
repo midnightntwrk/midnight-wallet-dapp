@@ -33,8 +33,8 @@
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.21.0",
     "@midnight-ntwrk/midnight-js": "5.0.0",
+    "@midnight-ntwrk/midnight-js-dapp-connector-proof-provider": "5.0.0",
     "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0",
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0",
     "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0",
     "@midnight-ntwrk/midnight-js-protocol": "5.0.0",

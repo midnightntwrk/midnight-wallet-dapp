@@ -23,7 +23,7 @@ import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnightntwrk/wallet-sd
 import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
 import { getErrorMessage } from './utils/errors';
-import { uint8ArrayToHex } from './lib/walletAdapter';
+import { uint8ArrayToHex } from './utils/hex';
 
 import './styles.css';
 

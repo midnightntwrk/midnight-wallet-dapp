@@ -16,15 +16,18 @@
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
-import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
+import {
+  dappConnectorNetwork,
+  dappConnectorProofProvider,
+  dappConnectorWalletProviders,
+} from '@midnight-ntwrk/midnight-js-dapp-connector-proof-provider';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
-import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits } from './types';
 import { SerializedZswapChainState, type MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
 import type { ZkArtifactIntegrityMode } from '@midnight-ntwrk/midnight-js/utils';
 import { type BlockHashConfig, type BlockHeightConfig } from '@midnight-ntwrk/midnight-js/types';
-import { ZswapChainState, type ContractAddress } from '@midnightntwrk/ledger-v9';
+import { CostModel, ZswapChainState, type ContractAddress } from '@midnightntwrk/ledger-v9';
 
 const ZSWAP_MERKLE_ROOT_RETENTION_SECONDS = 3600n;
 
@@ -37,23 +40,17 @@ const ZSWAP_MERKLE_ROOT_RETENTION_SECONDS = 3600n;
  */
 const TRANSACTION_TTL_SECONDS = 3600;
 
-export type ShieldedAddress = {
-  shieldedAddress: string;
-  shieldedCoinPublicKey: string;
-  shieldedEncryptionPublicKey: string;
-};
-
 /**
- * Only the connector methods a provider set reaches for: the three read here, plus the two the
- * wallet seams call. Narrowed the same way `createWalletProvidersFromConnectedAPI` narrows its own
- * parameter, so the dependency is honest and a caller — or a test — need not stand up a whole
- * connector.
+ * Only the connector methods a provider set reaches for: `getConfiguration` for the network,
+ * `getProvingProvider` for proving, `getShieldedAddresses` for the private-state account, and the
+ * two the framework's wallet seams call. Narrowed so the dependency is honest and a caller — or a
+ * test — need not stand up a whole connector.
  */
 export type ProviderConnector = Pick<
   ConnectedAPI,
   | 'getConfiguration'
+  | 'getProvingProvider'
   | 'getShieldedAddresses'
-  | 'getUnshieldedAddress'
   | 'balanceUnsealedTransaction'
   | 'submitTransaction'
 >;
@@ -92,15 +89,15 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
     verify: integrity,
   });
 
-  const config = await connectedAPI.getConfiguration();
-  const publicDataProvider = indexerPublicDataProvider({
-    queryURL: config.indexerUri,
-    subscriptionURL: config.indexerWsUri,
-  });
+  // The endpoints and the network id come from the wallet rather than being read field by field:
+  // the connector reports one node URI, and deriving the second scheme from it is the framework's
+  // job, not this dApp's.
+  const network = await dappConnectorNetwork(connectedAPI);
+  const publicDataProvider = indexerPublicDataProvider(network.indexer);
 
   // Past this point the provider owns a WebSocket and an Apollo client, but the caller has no way to
-  // release them until this function returns the disposer. Every failure in between — a wallet with
-  // no proof server set, a locked wallet, unavailable storage — must therefore release them here, or
+  // release them until this function returns the disposer. Every failure in between — a wallet that
+  // refuses to prove, a locked wallet, unavailable storage — must therefore release them here, or
   // each retry by a user fixing their wallet strands another connection.
   try {
     const baseQueryZSwapAndContractState = publicDataProvider.queryZSwapAndContractState.bind(publicDataProvider);
@@ -124,25 +121,21 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
       return { ...result, zswapChainState: SerializedZswapChainState.fromBytes('v9', updated.serialize()) };
     };
 
-    if (config.proverServerUri === undefined) {
-      throw new Error(
-        'The connected wallet did not supply a proof-server URL (proverServerUri). Set the proof ' +
-          'server in the wallet — port 6301 for a ledger-v8 contract, 6300 for a ledger-v9 one — ' +
-          'and reconnect.'
-      );
-    }
-    const proofProvider = httpClientProofProvider({ url: config.proverServerUri, zkConfigProvider });
-
-    // TODO: switch to connectedAPI.getProvingProvider once implemented in dapp-connector
-
-    const shieldedAddress: ShieldedAddress = await connectedAPI.getShieldedAddresses();
-    const unshieldedAddress = await connectedAPI.getUnshieldedAddress();
-
-    const { walletProvider, midnightProvider } = createWalletProvidersFromConnectedAPI(
+    // Proving goes through the wallet, so this dApp never learns a proof-server URL and the user
+    // never has to point one at the era they are calling. The cost model is consulted on the
+    // current era only; the retained ledger type-checks `prove()` against its own class across the
+    // WASM boundary and uses that one instead.
+    const proofProvider = await dappConnectorProofProvider(
       connectedAPI,
-      shieldedAddress,
-      unshieldedAddress.unshieldedAddress
+      zkConfigProvider,
+      CostModel.initialCostModel()
     );
+
+    const { walletProvider, midnightProvider } = await dappConnectorWalletProviders(connectedAPI);
+
+    // Read for the private-state account id. The wallet providers above read the shielded keys
+    // themselves, so this is the account this device stores state under, not key material they need.
+    const shieldedAddress = await connectedAPI.getShieldedAddresses();
 
     // For demo purposes only, we use a simple password provider that returns a fixed password.
     const privateStateProvider = levelPrivateStateProvider({
@@ -152,7 +145,7 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
 
     return {
       providers: {
-        config: { networkId: config.networkId, ttlSeconds: TRANSACTION_TTL_SECONDS },
+        config: { networkId: network.networkId, ttlSeconds: TRANSACTION_TTL_SECONDS },
         privateStateProvider,
         publicDataProvider,
         zkConfigProvider,

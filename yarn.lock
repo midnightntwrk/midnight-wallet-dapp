@@ -734,6 +734,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@midnight-ntwrk/midnight-js-dapp-connector-proof-provider@npm:5.0.0":
+  version: 5.0.0
+  resolution: "@midnight-ntwrk/midnight-js-dapp-connector-proof-provider@npm:5.0.0"
+  dependencies:
+    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0"
+    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0"
+    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0"
+    "@midnightntwrk/dapp-connector-api": "npm:4.1.0"
+  checksum: 10/d1162f1a81a7bfa7cef36d3c0074eacb253ecac2c8f4b79a292846f2e20af1c1ad56cb73a915f41ed118386a4ce456c5a0883e40575a0eec4d19d9f39514e865
+  languageName: node
+  linkType: hard
+
 "@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:5.0.0":
   version: 5.0.0
   resolution: "@midnight-ntwrk/midnight-js-fetch-zk-config-provider@npm:5.0.0"
@@ -742,19 +754,6 @@ __metadata:
     "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0"
     cross-fetch: "npm:^4.1.0"
   checksum: 10/ac1af3f58487184f54ab57fa794d9db8eaacd5b14e15890ed85bfb4e6e543d957fad10ff311236ff26777defe8dac45731fffb13e03bcfd5f3152d7afcd77e58
-  languageName: node
-  linkType: hard
-
-"@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:5.0.0":
-  version: 5.0.0
-  resolution: "@midnight-ntwrk/midnight-js-http-client-proof-provider@npm:5.0.0"
-  dependencies:
-    "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0"
-    "@midnight-ntwrk/midnight-js-types": "npm:5.0.0"
-    "@midnight-ntwrk/midnight-js-utils": "npm:5.0.0"
-    cross-fetch: "npm:^4.1.0"
-    fetch-retry: "npm:^6.0.0"
-  checksum: 10/8776b1d7d0654d6c0db84594f23974690dc6233db8fb6d41596fd44eb35117fb22ffc4bb7c8ad125eb5186c2b159e38d3d082734825005266429c240d8eb83b9
   languageName: node
   linkType: hard
 
@@ -856,8 +855,8 @@ __metadata:
     "@midnight-ntwrk/compact-runtime": "npm:0.21.0"
     "@midnight-ntwrk/midnight-js": "npm:5.0.0"
     "@midnight-ntwrk/midnight-js-compact": "npm:5.0.0"
+    "@midnight-ntwrk/midnight-js-dapp-connector-proof-provider": "npm:5.0.0"
     "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "npm:5.0.0"
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "npm:5.0.0"
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "npm:5.0.0"
     "@midnight-ntwrk/midnight-js-level-private-state-provider": "npm:5.0.0"
     "@midnight-ntwrk/midnight-js-protocol": "npm:5.0.0"
@@ -3358,13 +3357,6 @@ __metadata:
     picomatch:
       optional: true
   checksum: 10/14ca1c9f0a0e8f4f2e9bf4e8551065a164a09545dae548c12a18d238b72e51e5a7b39bd8e5494b56463a0877672d0a6c1ef62c6fa0677db1b0c847773be939b1
-  languageName: node
-  linkType: hard
-
-"fetch-retry@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "fetch-retry@npm:6.0.0"
-  checksum: 10/0c8d3082e2d76fff2df75adef6280bc854bc36fd3ef38506674f0216d0d819e2efd14da7477d3f1732415aea1d2cfde7cd3e1aeae46f45f2adbfc5133296e8de
   languageName: node
   linkType: hard
 

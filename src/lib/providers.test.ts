@@ -15,13 +15,14 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { dispose, indexerPublicDataProvider } = vi.hoisted(() => {
+const { dispose, indexerPublicDataProvider, proofProviderFromWallet } = vi.hoisted(() => {
   const dispose = vi.fn(() => Promise.resolve());
   return {
     dispose,
     // The indexer provider opens a WebSocket and an Apollo client the moment it is constructed, so
     // every path that abandons it after this point has to release it.
     indexerPublicDataProvider: vi.fn(() => ({ dispose, queryZSwapAndContractState: vi.fn() })),
+    proofProviderFromWallet: vi.fn(() => Promise.resolve({})),
   };
 });
 
@@ -33,11 +34,12 @@ vi.mock('@midnight-ntwrk/midnight-js-level-private-state-provider', () => ({
 vi.mock('@midnight-ntwrk/midnight-js-fetch-zk-config-provider', () => ({
   FetchZkConfigProvider: class {},
 }));
-vi.mock('@midnight-ntwrk/midnight-js-http-client-proof-provider', () => ({
-  httpClientProofProvider: vi.fn(() => ({})),
-}));
-vi.mock('./walletAdapter', () => ({
-  createWalletProvidersFromConnectedAPI: vi.fn(() => ({ walletProvider: {}, midnightProvider: {} })),
+// The framework's own connector adapters. `dappConnectorNetwork` is left real: it reads the
+// configuration the stub below serves, and a change in what it demands of a wallet should fail here.
+vi.mock('@midnight-ntwrk/midnight-js-dapp-connector-proof-provider', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  dappConnectorProofProvider: proofProviderFromWallet,
+  dappConnectorWalletProviders: vi.fn(() => Promise.resolve({ walletProvider: {}, midnightProvider: {} })),
 }));
 
 import { buildProvidersFromConnectedAPI, type ProviderConnector } from './providers';
@@ -48,19 +50,19 @@ const SHIELDED = {
   shieldedEncryptionPublicKey: 'encryption-public-key',
 };
 
-const configuration = (proverServerUri: string | undefined) => ({
+const CONFIGURATION = {
   indexerUri: 'http://localhost:8088/api/v3/graphql',
   indexerWsUri: 'ws://localhost:8088/api/v3/graphql/ws',
   substrateNodeUri: 'ws://localhost:9944',
   networkId: 'undeployed',
-  proverServerUri,
-});
+  proverServerUri: undefined,
+};
 
 /** `ProviderConnector` is the five methods the builder uses, so a whole wallet is not needed here. */
 const connectorWith = (overrides: Partial<ProviderConnector> = {}): ProviderConnector => ({
-  getConfiguration: () => Promise.resolve(configuration('http://localhost:6300')),
+  getConfiguration: () => Promise.resolve(CONFIGURATION),
+  getProvingProvider: () => Promise.resolve({ check: vi.fn(), prove: vi.fn() }),
   getShieldedAddresses: () => Promise.resolve(SHIELDED),
-  getUnshieldedAddress: () => Promise.resolve({ unshieldedAddress: 'mn_addr_test' }),
   balanceUnsealedTransaction: () => Promise.resolve({ tx: '' }),
   submitTransaction: () => Promise.resolve(),
   ...overrides,
@@ -76,10 +78,12 @@ describe('buildProvidersFromConnectedAPI', () => {
     vi.stubGlobal('window', { location: { origin: 'http://localhost:5173' } });
   });
 
-  test('releases the indexer connection when the wallet supplies no proof-server URL', async () => {
-    const connectedAPI = connectorWith({ getConfiguration: () => Promise.resolve(configuration(undefined)) });
+  test('releases the indexer connection when the wallet refuses to prove', async () => {
+    proofProviderFromWallet.mockRejectedValueOnce(new Error('proving rejected'));
 
-    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers-v9')).rejects.toThrow(/proverServerUri/);
+    await expect(buildProvidersFromConnectedAPI(connectorWith(), 'token-transfers-v9')).rejects.toThrow(
+      'proving rejected'
+    );
 
     expect(dispose).toHaveBeenCalledTimes(1);
   });
