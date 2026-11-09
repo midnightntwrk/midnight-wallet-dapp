@@ -79,7 +79,7 @@ describe('buildProvidersFromConnectedAPI', () => {
   test('releases the indexer connection when the wallet supplies no proof-server URL', async () => {
     const connectedAPI = connectorWith({ getConfiguration: () => Promise.resolve(configuration(undefined)) });
 
-    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers')).rejects.toThrow(/proverServerUri/);
+    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers-v9')).rejects.toThrow(/proverServerUri/);
 
     expect(dispose).toHaveBeenCalledTimes(1);
   });
@@ -89,7 +89,7 @@ describe('buildProvidersFromConnectedAPI', () => {
       getShieldedAddresses: () => Promise.reject(new Error('wallet locked')),
     });
 
-    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers')).rejects.toThrow('wallet locked');
+    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers-v9')).rejects.toThrow('wallet locked');
 
     expect(dispose).toHaveBeenCalledTimes(1);
   });
@@ -100,13 +100,13 @@ describe('buildProvidersFromConnectedAPI', () => {
       getShieldedAddresses: () => Promise.reject(new Error('wallet locked')),
     });
 
-    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers')).rejects.toThrow('wallet locked');
+    await expect(buildProvidersFromConnectedAPI(connectedAPI, 'token-transfers-v9')).rejects.toThrow('wallet locked');
   });
 
   test('hands back a working provider set without disposing it', async () => {
     const { providers, dispose: bundleDispose } = await buildProvidersFromConnectedAPI(
       connectorWith(),
-      'token-transfers'
+      'token-transfers-v9'
     );
 
     expect(providers.publicDataProvider).toBeDefined();

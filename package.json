@@ -18,7 +18,7 @@
     "env:fork": "TESTCONTAINERS_UID=999 docker compose -f compose.yml --profile tools run --rm toolkit runtime-upgrade --wasm-file /runtime/midnight_node_runtime.compact.compressed.wasm -c //Dave -c //Eve -t //Alice -t //Bob --rpc-url ws://node:9944 --signer-key //Alice",
     "env:down:latest": "docker compose -f compose_latest.yml down",
     "compact": "yarn fetch-compactc && yarn contract-demo",
-    "contract-demo": "yarn run-compactc src/contract/contracts/token-transfers.compact src/contract/compiled/token-transfers",
+    "contract-demo": "yarn run-compactc src/contract/contracts/token-transfers.compact src/contract/compiled/token-transfers-v9",
     "contract-demo:retained": "node scripts/compile-retained.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",

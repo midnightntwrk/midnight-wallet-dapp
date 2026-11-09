@@ -34,7 +34,7 @@ import {
   type RetainedProviders,
 } from './types';
 
-const CURRENT_ARTIFACT = 'token-transfers';
+const CURRENT_ARTIFACT = 'token-transfers-v9';
 const RETAINED_ARTIFACT = 'token-transfers-v8';
 
 /**

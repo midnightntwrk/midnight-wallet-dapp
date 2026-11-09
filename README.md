@@ -181,7 +181,7 @@ The dApp carries **two** builds of the same `.compact` source:
 
 | Artifact | Toolchain | Era |
 | --- | --- | --- |
-| `src/contract/compiled/token-transfers` | compactc 0.34.0, runtime 0.19.0 | current (ledger v9) |
+| `src/contract/compiled/token-transfers-v9` | compactc 0.36.0, runtime 0.21.0 | current (ledger v9) |
 | `src/contract/compiled/token-transfers-v8` | compactc 0.31.1, runtime 0.16.0 | retained (ledger v8) |
 
 The retained twin is what makes a contract deployed *before* the fork still callable *after* it. Build

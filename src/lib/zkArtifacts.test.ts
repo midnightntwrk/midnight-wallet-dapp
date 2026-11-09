@@ -104,13 +104,13 @@ const providerFor = (artifact: string, verify: 'require' | 'require-if-present')
 
 describe('current-era artifact', () => {
   test('declares the runtime this dApp actually installs', async () => {
-    const runtimeVersion = await providerFor('token-transfers', 'require').getArtifactRuntimeVersion();
+    const runtimeVersion = await providerFor('token-transfers-v9', 'require').getArtifactRuntimeVersion();
 
     expect(majorMinor(runtimeVersion)).toBe(majorMinor(installedRuntimeVersion('@midnight-ntwrk/compact-runtime')));
   });
 
   test('serves every circuit a verifier key the manifest vouches for', async () => {
-    const provider = providerFor('token-transfers', 'require');
+    const provider = providerFor('token-transfers-v9', 'require');
 
     const keys = await Promise.all(CIRCUITS.map((circuitId) => provider.getVerifierKey(circuitId)));
 
@@ -120,7 +120,7 @@ describe('current-era artifact', () => {
   test('refuses a verifier key the manifest does not vouch for', async () => {
     corrupt = 'mintAndReceive.verifier';
     try {
-      await expect(providerFor('token-transfers', 'require').getVerifierKey('mintAndReceive')).rejects.toThrow(
+      await expect(providerFor('token-transfers-v9', 'require').getVerifierKey('mintAndReceive')).rejects.toThrow(
         ZkArtifactIntegrityError
       );
     } finally {

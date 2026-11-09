@@ -65,7 +65,7 @@ describe('era dispatch', () => {
   test('deploys the current era against the current artifact', async () => {
     await deploySessionContract(connectedAPI, 'v9');
 
-    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v9');
     expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: CURRENT_CONTRACT });
   });
 
@@ -79,7 +79,7 @@ describe('era dispatch', () => {
   test('joins the current era through the current artifact, at the address asked for', async () => {
     await joinSessionContract(connectedAPI, 'v9', CONTRACT_ADDRESS);
 
-    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v9');
     expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
       compiledContract: CURRENT_CONTRACT,
       contractAddress: CONTRACT_ADDRESS,
