@@ -21,12 +21,21 @@ import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
 import { createWalletProvidersFromConnectedAPI } from './walletAdapter';
 import { DemoCircuits } from './types';
-import type { MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
+import { SerializedZswapChainState, type MidnightProviders } from '@midnight-ntwrk/midnight-js/types';
 import type { ZkArtifactIntegrityMode } from '@midnight-ntwrk/midnight-js/utils';
 import { type BlockHashConfig, type BlockHeightConfig } from '@midnight-ntwrk/midnight-js/types';
-import { type ContractAddress } from '@midnightntwrk/ledger-v9';
+import { ZswapChainState, type ContractAddress } from '@midnightntwrk/ledger-v9';
 
 const ZSWAP_MERKLE_ROOT_RETENTION_SECONDS = 3600n;
+
+/**
+ * How long a transaction this dApp builds stays valid, in seconds.
+ *
+ * Required per provider set since midnight-js 5.0.0, which has no default of its own. An hour is
+ * what the framework's own wallet provider uses, and it is long enough for a demo session that
+ * waits on a proof server between building a call and submitting it.
+ */
+const TRANSACTION_TTL_SECONDS = 3600;
 
 export type ShieldedAddress = {
   shieldedAddress: string;
@@ -102,12 +111,17 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
       const result = await baseQueryZSwapAndContractState(contractAddress, queryConfig);
       if (!result) return result;
 
-      const [zswapChainState, contractState, ledgerParameters] = result;
-      return [
-        zswapChainState.postBlockUpdate(new Date(), ZSWAP_MERKLE_ROOT_RETENTION_SECONDS),
-        contractState,
-        ledgerParameters,
-      ] as typeof result;
+      // The read crosses as bytes now, so the retention window is applied by decoding with this
+      // dApp's own ledger copy and sealing the result back into a state of the same era. Only the
+      // current era is decoded here: this dApp carries no v8 runtime, and a pre-fork read is better
+      // passed through untouched than refused by a decoder that has nothing to offer it.
+      const { zswapChainState } = result;
+      if (zswapChainState.era !== 'v9') return result;
+
+      const updated = zswapChainState
+        .deserialize({ v9: ZswapChainState })
+        .postBlockUpdate(new Date(), ZSWAP_MERKLE_ROOT_RETENTION_SECONDS);
+      return { ...result, zswapChainState: SerializedZswapChainState.fromBytes('v9', updated.serialize()) };
     };
 
     if (config.proverServerUri === undefined) {
@@ -138,6 +152,7 @@ export async function buildProvidersFromConnectedAPI<K extends string = DemoCirc
 
     return {
       providers: {
+        config: { networkId: config.networkId, ttlSeconds: TRANSACTION_TTL_SECONDS },
         privateStateProvider,
         publicDataProvider,
         zkConfigProvider,

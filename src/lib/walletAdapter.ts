@@ -16,17 +16,9 @@
 import {
   createMidnightProviderFromHandlers,
   createWalletProviderFromHandlers,
-  UnboundTransaction,
+  type LedgerTransaction,
 } from '@midnight-ntwrk/midnight-js/types';
-import {
-  Binding,
-  CoinPublicKey,
-  EncPublicKey,
-  FinalizedTransaction,
-  Proof,
-  SignatureEnabled,
-  Transaction,
-} from '@midnightntwrk/ledger-v9';
+import { CoinPublicKey, EncPublicKey, Transaction } from '@midnightntwrk/ledger-v9';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { ShieldedAddress } from './providers';
 
@@ -80,6 +72,18 @@ export function createWalletProvidersFromConnectedAPI(
 ) {
   console.log('[WalletAdapter] Creating wallet providers for', shieldedAddress.shieldedAddress, unshieldedAddress);
 
+  // Both eras balance the same way: bytes go to the wallet and bytes come back. Which era the wallet
+  // deserializes them as follows from the protocol version of the chain it is on, so the connector
+  // needs no era parameter and offers none. The framework seals the returned bytes back into a
+  // transaction of the era it asked about, so a corrupt answer is refused at `balanceTx`.
+  const balanceThroughWallet = async (txBytes: Uint8Array): Promise<Uint8Array> => {
+    console.log('[WalletAdapter] balanceTx: balancing bytes:', txBytes.length);
+    const result = await connectedAPI.balanceUnsealedTransaction(uint8ArrayToHex(txBytes));
+    const resultBytes = hexToUint8Array(result.tx);
+    console.log('[WalletAdapter] balanceTx: wallet returned bytes:', resultBytes.length);
+    return resultBytes;
+  };
+
   const walletProvider = createWalletProviderFromHandlers({
     getCoinPublicKey(): CoinPublicKey {
       return shieldedAddress.shieldedCoinPublicKey;
@@ -87,37 +91,15 @@ export function createWalletProvidersFromConnectedAPI(
     getEncryptionPublicKey(): EncPublicKey {
       return shieldedAddress.shieldedEncryptionPublicKey;
     },
-    currentEra: traced('balanceTx', async (tx: UnboundTransaction): Promise<FinalizedTransaction> => {
-      const serializedStr = uint8ArrayToHex(tx.serialize());
-      console.log('[WalletAdapter] balanceTx: balancing, hex length:', serializedStr.length);
-
-      const result = await connectedAPI.balanceUnsealedTransaction(serializedStr);
-      const resultBytes = hexToUint8Array(result.tx);
-      console.log('[WalletAdapter] balanceTx: wallet returned bytes:', resultBytes.length);
-
-      return Transaction.deserialize('signature', 'proof', 'binding', resultBytes) as Transaction<
-        SignatureEnabled,
-        Proof,
-        Binding
-      >;
-    }),
-    // The retained arm never builds a ledger object: bytes go to the wallet and bytes come back.
-    // Which era the wallet deserializes them as follows from the protocol version of the chain it
-    // is on, so the connector needs no era parameter and offers none.
-    retainedEras: {
-      v8: traced('balanceTx(v8)', async (txBytes: Uint8Array): Promise<Uint8Array> => {
-        console.log('[WalletAdapter] balanceTx(v8): balancing retained-era bytes:', txBytes.length);
-        const result = await connectedAPI.balanceUnsealedTransaction(uint8ArrayToHex(txBytes));
-        return hexToUint8Array(result.tx);
-      }),
-    },
+    v9: traced('balanceTx', (tx: LedgerTransaction<'Unbound', 'v9'>) => balanceThroughWallet(tx.serialize())),
+    v8: traced('balanceTx(v8)', (tx: LedgerTransaction<'Unbound', 'v8'>) => balanceThroughWallet(tx.serialize())),
   });
 
   const midnightProvider = createMidnightProviderFromHandlers({
-    currentEra: traced('submitTx', async (tx: FinalizedTransaction): Promise<string> => {
+    v9: traced('submitTx', async (tx: LedgerTransaction<'Finalized', 'v9'>): Promise<string> => {
       // Read the id before submitting: past that call the transaction is on its way, and a failure
       // here would otherwise be reported to the user as a failed submission they should retry.
-      const [txId] = tx.identifiers();
+      const [txId] = tx.deserialize({ v9: Transaction }).identifiers();
       if (txId === undefined) {
         throw new Error('The transaction carries no identifier, so it cannot be tracked once submitted.');
       }
@@ -126,17 +108,16 @@ export function createWalletProvidersFromConnectedAPI(
       console.log('[WalletAdapter] submitTx: submitted', txId);
       return txId;
     }),
-    retainedEras: {
-      v8: traced('submitTx(v8)', async (txBytes: Uint8Array): Promise<string> => {
-        // Same ordering as the current era, and for the same reason: deserializing these bytes can
-        // fail, and after `submitTransaction` that failure is no longer the caller's to retry.
-        const txId = await retainedTransactionId(txBytes);
+    v8: traced('submitTx(v8)', async (tx: LedgerTransaction<'Finalized', 'v8'>): Promise<string> => {
+      // Same ordering as the current era, and for the same reason: deserializing these bytes can
+      // fail, and after `submitTransaction` that failure is no longer the caller's to retry.
+      const txBytes = tx.serialize();
+      const txId = await retainedTransactionId(txBytes);
 
-        await connectedAPI.submitTransaction(uint8ArrayToHex(txBytes));
-        console.log('[WalletAdapter] submitTx(v8): submitted', txId);
-        return txId;
-      }),
-    },
+      await connectedAPI.submitTransaction(uint8ArrayToHex(txBytes));
+      console.log('[WalletAdapter] submitTx(v8): submitted', txId);
+      return txId;
+    }),
   });
 
   return { walletProvider, midnightProvider };

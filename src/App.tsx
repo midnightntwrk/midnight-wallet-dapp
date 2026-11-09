@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState } from 'react';
-import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
+import React, { useState } from 'react';
 import { deploySessionContract, joinSessionContract, type ContractEra, type ContractSession } from './lib/session';
 import { HardForkPanel } from './components/HardForkPanel';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
@@ -42,7 +41,7 @@ export default function App() {
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [customNetworkId, setCustomNetworkId] = useState<string>('');
   const [session, setSession] = useState<ContractSession | null>(null);
-  const [contractEra, setContractEra] = useState<ContractEra>('ledger9');
+  const [contractEra, setContractEra] = useState<ContractEra>('v9');
   const [joinAddress, setJoinAddress] = useState<string>('');
 
   const [mintAmount, setMintAmount] = useState<string>('10000');
@@ -58,15 +57,10 @@ export default function App() {
   const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
   const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
 
+  // The framework has no global network id since 5.0.0: it reads `providers.config.networkId`,
+  // which `buildProvidersFromConnectedAPI` takes from the wallet's own configuration. This value
+  // only drives the connect call and what the UI shows.
   const effectiveNetworkId = networkId === 'custom' ? customNetworkId : networkId;
-
-  useEffect(() => {
-    try {
-      setGlobalNetworkId(effectiveNetworkId as NetworkId);
-    } catch {
-      // Ignore invalid values
-    }
-  }, [effectiveNetworkId]);
 
   async function onConnectWallet() {
     if (availableAPIs.length === 0) {
@@ -78,28 +72,17 @@ export default function App() {
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
-      try {
-        setGlobalNetworkId(effectiveNetworkId as NetworkId);
-      } catch {
-        // ignore
-      }
-
       const connected = await initialAPI.connect(effectiveNetworkId);
       setConnectedAPI(connected);
       appendLog('Wallet connected successfully');
 
       const config = await connected.getConfiguration();
-      try {
-        const presetNetworks = ['undeployed', 'preview', 'qanet'];
-        if (presetNetworks.includes(config.networkId)) {
-          setNetworkIdState(config.networkId);
-        } else {
-          setNetworkIdState('custom');
-          setCustomNetworkId(config.networkId);
-        }
-        setGlobalNetworkId(config.networkId as NetworkId);
-      } catch {
-        // Fall back to UI state
+      const presetNetworks = ['undeployed', 'preview', 'qanet'];
+      if (presetNetworks.includes(config.networkId)) {
+        setNetworkIdState(config.networkId);
+      } else {
+        setNetworkIdState('custom');
+        setCustomNetworkId(config.networkId);
       }
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
@@ -436,7 +419,7 @@ export default function App() {
           <section className="contract-card">
             <div className="contract-card-header">
               <h3>Contract Era</h3>
-              <span className="contract-card-badge badge-secondary">{contractEra === 'ledger9' ? 'v9' : 'v8'}</span>
+              <span className="contract-card-badge badge-secondary">{contractEra}</span>
             </div>
             <div className="contract-card-content">
               <div className="form-group">
@@ -448,8 +431,8 @@ export default function App() {
                   className="input"
                   disabled={!!session || isLoading}
                 >
-                  <option value="ledger9">Current (compactc 0.35.0, ledger v9)</option>
-                  <option value="ledger8">Pre-fork (compactc 0.31.1, ledger v8)</option>
+                  <option value="v9">Current (compactc 0.35.0, ledger v9)</option>
+                  <option value="v8">Pre-fork (compactc 0.31.1, ledger v8)</option>
                 </select>
               </div>
               <p className="hint">

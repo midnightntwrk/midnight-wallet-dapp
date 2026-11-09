@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
-import type { Ledger8 } from '@midnight-ntwrk/midnight-js/contracts';
+import type { Ledger8CircuitId } from '@midnight-ntwrk/midnight-js/contracts';
 
 import * as CompiledOutput from '../contract/index';
 import * as RetainedOutput from '../contract/index-v8';
@@ -43,7 +43,7 @@ export const createRetainedContractInstance = (): RetainedContract => new Retain
  * retained circuit ids off `provableCircuits`; borrowing its alias means an artifact whose two maps
  * differ can no longer leave this dApp naming circuits the framework cannot run.
  */
-export type RetainedCircuits = Ledger8.CircuitId<RetainedContract>;
+export type RetainedCircuits = Ledger8CircuitId<RetainedContract>;
 
 export type RetainedProviders = MidnightProviders<RetainedCircuits>;
 

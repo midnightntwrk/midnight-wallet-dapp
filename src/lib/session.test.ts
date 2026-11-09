@@ -28,7 +28,6 @@ vi.mock('./providers', () => ({ buildProvidersFromConnectedAPI: buildProviders }
 vi.mock('@midnight-ntwrk/midnight-js/contracts', () => ({
   deployContract,
   findDeployedContract,
-  Ledger8: {},
 }));
 
 // The real module loads both compiled artifacts, which pull in the Compact runtime WASM. The era
@@ -45,7 +44,7 @@ const connectedAPI = {} as ConnectedAPI;
 const CONTRACT_ADDRESS = '0200aabb';
 
 /** The only way to reach the defensive branch: `ContractEra` has no third member to pass honestly. */
-const UNKNOWN_ERA = 'ledger10' as ContractEra;
+const UNKNOWN_ERA = 'v10' as ContractEra;
 
 // The markers the `./types` mock stands in for. Asserted on, rather than merely passed through,
 // because pairing an era's provider set with the OTHER era's contract is the failure this dispatch
@@ -59,26 +58,26 @@ describe('era dispatch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     buildProviders.mockResolvedValue({ providers: { marker: 'providers' }, dispose });
-    deployContract.mockResolvedValue({ era: 'ledger9', contractAddress: CONTRACT_ADDRESS });
-    findDeployedContract.mockResolvedValue({ era: 'ledger9', contractAddress: CONTRACT_ADDRESS });
+    deployContract.mockResolvedValue({ era: 'v9', contractAddress: CONTRACT_ADDRESS });
+    findDeployedContract.mockResolvedValue({ era: 'v9', contractAddress: CONTRACT_ADDRESS });
   });
 
   test('deploys the current era against the current artifact', async () => {
-    await deploySessionContract(connectedAPI, 'ledger9');
+    await deploySessionContract(connectedAPI, 'v9');
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
     expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: CURRENT_CONTRACT });
   });
 
   test('deploys the retained era against the pre-fork artifact, waiving the absent manifest', async () => {
-    await deploySessionContract(connectedAPI, 'ledger8');
+    await deploySessionContract(connectedAPI, 'v8');
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
     expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: RETAINED_CONTRACT });
   });
 
   test('joins the current era through the current artifact, at the address asked for', async () => {
-    await joinSessionContract(connectedAPI, 'ledger9', CONTRACT_ADDRESS);
+    await joinSessionContract(connectedAPI, 'v9', CONTRACT_ADDRESS);
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers');
     expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
@@ -88,7 +87,7 @@ describe('era dispatch', () => {
   });
 
   test('joins the retained era through the pre-fork artifact, at the address asked for', async () => {
-    await joinSessionContract(connectedAPI, 'ledger8', CONTRACT_ADDRESS);
+    await joinSessionContract(connectedAPI, 'v8', CONTRACT_ADDRESS);
 
     expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
     expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
@@ -98,13 +97,13 @@ describe('era dispatch', () => {
   });
 
   test('refuses an era it cannot place rather than deploying the pre-fork artifact', async () => {
-    await expect(deploySessionContract(connectedAPI, UNKNOWN_ERA)).rejects.toThrow(/ledger10/);
+    await expect(deploySessionContract(connectedAPI, UNKNOWN_ERA)).rejects.toThrow(/v10/);
 
     expect(deployContract).not.toHaveBeenCalled();
   });
 
   test('refuses an era it cannot place rather than joining through the pre-fork artifact', async () => {
-    await expect(joinSessionContract(connectedAPI, UNKNOWN_ERA, CONTRACT_ADDRESS)).rejects.toThrow(/ledger10/);
+    await expect(joinSessionContract(connectedAPI, UNKNOWN_ERA, CONTRACT_ADDRESS)).rejects.toThrow(/v10/);
 
     expect(findDeployedContract).not.toHaveBeenCalled();
   });
@@ -123,7 +122,7 @@ describe('provider cleanup', () => {
   test('releases the providers when a deploy fails, and reports why the deploy failed', async () => {
     deployContract.mockRejectedValue(new Error('proof server unreachable'));
 
-    await expect(deploySessionContract(connectedAPI, 'ledger9')).rejects.toThrow('proof server unreachable');
+    await expect(deploySessionContract(connectedAPI, 'v9')).rejects.toThrow('proof server unreachable');
 
     expect(dispose).toHaveBeenCalledTimes(1);
   });
@@ -132,7 +131,7 @@ describe('provider cleanup', () => {
     findDeployedContract.mockRejectedValue(new Error('contract address not found'));
     dispose.mockRejectedValueOnce(new Error('websocket already closed'));
 
-    await expect(joinSessionContract(connectedAPI, 'ledger9', CONTRACT_ADDRESS)).rejects.toThrow(
+    await expect(joinSessionContract(connectedAPI, 'v9', CONTRACT_ADDRESS)).rejects.toThrow(
       'contract address not found'
     );
   });

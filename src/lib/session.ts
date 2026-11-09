@@ -16,10 +16,10 @@
 import {
   deployContract,
   findDeployedContract,
-  Ledger8,
   type FoundContract,
-  type PipelineEra,
+  type Ledger8FoundContract,
 } from '@midnight-ntwrk/midnight-js/contracts';
+import type { LedgerEra } from '@midnight-ntwrk/midnight-js';
 import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 
 import { buildProvidersFromConnectedAPI, type ProviderBundle } from './providers';
@@ -47,7 +47,7 @@ const RETAINED_ARTIFACT = 'token-transfers-v8';
  * Aliased from the framework rather than re-declared, so a new era cannot arrive without this dApp
  * failing to compile.
  */
-export type ContractEra = PipelineEra;
+export type ContractEra = LedgerEra;
 
 /**
  * A contract handle of either era.
@@ -56,7 +56,7 @@ export type ContractEra = PipelineEra;
  * same source, so the union is callable directly — `handle.callTx.mintAndReceive(amount)` type-checks
  * against both arms at once. That is what keeps the era out of every call site.
  */
-export type ContractHandle = FoundContract<DemoContract> | Ledger8.FoundContract<RetainedContract>;
+export type ContractHandle = FoundContract<DemoContract> | Ledger8FoundContract<RetainedContract>;
 
 /**
  * The era is read off `handle.era`, which the framework already tags; a second copy could drift.
@@ -79,7 +79,7 @@ const retainedEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundl
 /**
  * Refuses an era this dApp carries no artifact for.
  *
- * Typed `never`, so a third `PipelineEra` member arriving upstream fails to compile here rather than
+ * Typed `never`, so a third `LedgerEra` member arriving upstream fails to compile here rather than
  * falling through to the retained branch and deploying a pre-fork contract under a new era's name.
  */
 function unsupportedEra(era: never): Error {
@@ -111,7 +111,7 @@ async function withCleanup(
 }
 
 /**
- * The one place an era is dispatched to open a session. A new `PipelineEra` member has one branch to
+ * The one place an era is dispatched to open a session. A new `LedgerEra` member has one branch to
  * add here rather than one per entry point, and one `unsupportedEra` guard to fall through rather
  * than two that can drift apart. The dApp dispatches on era elsewhere too — see the selector and the
  * era badge in `App.tsx` — so this is not the only place a new era needs work.
@@ -127,28 +127,25 @@ async function openSession(
   connectedAPI: ConnectedAPI,
   era: ContractEra,
   open: {
-    readonly ledger9: (
-      providers: DemoProviders,
-      compiledContract: typeof CompiledDemoContract
-    ) => Promise<ContractHandle>;
-    readonly ledger8: (providers: RetainedProviders, contract: RetainedContract) => Promise<ContractHandle>;
+    readonly v9: (providers: DemoProviders, compiledContract: typeof CompiledDemoContract) => Promise<ContractHandle>;
+    readonly v8: (providers: RetainedProviders, contract: RetainedContract) => Promise<ContractHandle>;
   }
 ): Promise<ContractSession> {
-  if (era === 'ledger9') {
+  if (era === 'v9') {
     const { providers, dispose } = await currentEraProviders(connectedAPI);
-    return withCleanup(dispose, () => open.ledger9(providers, CompiledDemoContract));
+    return withCleanup(dispose, () => open.v9(providers, CompiledDemoContract));
   }
-  if (era === 'ledger8') {
+  if (era === 'v8') {
     const { providers, dispose } = await retainedEraProviders(connectedAPI);
-    return withCleanup(dispose, () => open.ledger8(providers, createRetainedContractInstance()));
+    return withCleanup(dispose, () => open.v8(providers, createRetainedContractInstance()));
   }
   throw unsupportedEra(era);
 }
 
 export const deploySessionContract = (connectedAPI: ConnectedAPI, era: ContractEra): Promise<ContractSession> =>
   openSession(connectedAPI, era, {
-    ledger9: (providers, compiledContract) => deployContract(providers, { compiledContract }),
-    ledger8: (providers, compiledContract) => deployContract(providers, { compiledContract }),
+    v9: (providers, compiledContract) => deployContract(providers, { compiledContract }),
+    v8: (providers, compiledContract) => deployContract(providers, { compiledContract }),
   });
 
 export const joinSessionContract = (
@@ -157,6 +154,6 @@ export const joinSessionContract = (
   contractAddress: string
 ): Promise<ContractSession> =>
   openSession(connectedAPI, era, {
-    ledger9: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
-    ledger8: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
+    v9: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
+    v8: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
   });
