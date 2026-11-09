@@ -1,0 +1,138 @@
+/*
+ * This file is part of midnight-wallet-dapp.
+ * Copyright (C) Midnight Foundation
+ * SPDX-License-Identifier: Apache-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
+
+const { buildProviders, deployContract, findDeployedContract, dispose } = vi.hoisted(() => ({
+  buildProviders: vi.fn(),
+  deployContract: vi.fn(),
+  findDeployedContract: vi.fn(),
+  dispose: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../lib/providers', () => ({ buildProvidersFromConnectedAPI: buildProviders }));
+
+vi.mock('@midnight-ntwrk/midnight-js/contracts', () => ({
+  deployContract,
+  findDeployedContract,
+}));
+
+// The real module loads both compiled artifacts, which pull in the Compact runtime WASM. The era
+// dispatch only forwards these values, so their identity is all that matters here.
+vi.mock('../lib/types', () => ({
+  CompiledDemoContract: { marker: 'current' },
+  createRetainedContractInstance: () => ({ marker: 'retained' }),
+}));
+
+import { deploySessionContract, joinSessionContract, type ContractEra } from '../lib/session';
+
+// The dispatch forwards the connector untouched to the mocked provider factory, so it is never read.
+const connectedAPI = {} as ConnectedAPI;
+const CONTRACT_ADDRESS = '0200aabb';
+
+/** The only way to reach the defensive branch: `ContractEra` has no third member to pass honestly. */
+const UNKNOWN_ERA = 'v10' as ContractEra;
+
+// The markers the `./types` mock stands in for. Asserted on, rather than merely passed through,
+// because pairing an era's provider set with the OTHER era's contract is the failure this dispatch
+// exists to prevent, and it is not one a reader of the call site can see: the two openers are
+// identical, so only these assertions pin which contract each era actually receives.
+const PROVIDERS = { marker: 'providers' };
+const CURRENT_CONTRACT = { marker: 'current' };
+const RETAINED_CONTRACT = { marker: 'retained' };
+
+describe('era dispatch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    buildProviders.mockResolvedValue({ providers: { marker: 'providers' }, dispose });
+    deployContract.mockResolvedValue({ era: 'v9', contractAddress: CONTRACT_ADDRESS });
+    findDeployedContract.mockResolvedValue({ era: 'v9', contractAddress: CONTRACT_ADDRESS });
+  });
+
+  test('deploys the current era against the current artifact', async () => {
+    await deploySessionContract(connectedAPI, 'v9');
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v9');
+    expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: CURRENT_CONTRACT });
+  });
+
+  test('deploys the retained era against the pre-fork artifact, waiving the absent manifest', async () => {
+    await deploySessionContract(connectedAPI, 'v8');
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
+    expect(deployContract).toHaveBeenCalledWith(PROVIDERS, { compiledContract: RETAINED_CONTRACT });
+  });
+
+  test('joins the current era through the current artifact, at the address asked for', async () => {
+    await joinSessionContract(connectedAPI, 'v9', CONTRACT_ADDRESS);
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v9');
+    expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
+      compiledContract: CURRENT_CONTRACT,
+      contractAddress: CONTRACT_ADDRESS,
+    });
+  });
+
+  test('joins the retained era through the pre-fork artifact, at the address asked for', async () => {
+    await joinSessionContract(connectedAPI, 'v8', CONTRACT_ADDRESS);
+
+    expect(buildProviders).toHaveBeenCalledWith(connectedAPI, 'token-transfers-v8', 'require-if-present');
+    expect(findDeployedContract).toHaveBeenCalledWith(PROVIDERS, {
+      compiledContract: RETAINED_CONTRACT,
+      contractAddress: CONTRACT_ADDRESS,
+    });
+  });
+
+  test('refuses an era it cannot place rather than deploying the pre-fork artifact', async () => {
+    await expect(deploySessionContract(connectedAPI, UNKNOWN_ERA)).rejects.toThrow(/v10/);
+
+    expect(deployContract).not.toHaveBeenCalled();
+  });
+
+  test('refuses an era it cannot place rather than joining through the pre-fork artifact', async () => {
+    await expect(joinSessionContract(connectedAPI, UNKNOWN_ERA, CONTRACT_ADDRESS)).rejects.toThrow(/v10/);
+
+    expect(findDeployedContract).not.toHaveBeenCalled();
+  });
+});
+
+describe('provider cleanup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // `clearAllMocks` leaves a queued `mockRejectedValueOnce` in place, so restore the resolving
+    // default explicitly — otherwise a rejection staged by one test fires in the next one.
+    dispose.mockReset();
+    dispose.mockResolvedValue(undefined);
+    buildProviders.mockResolvedValue({ providers: { marker: 'providers' }, dispose });
+  });
+
+  test('releases the providers when a deploy fails, and reports why the deploy failed', async () => {
+    deployContract.mockRejectedValue(new Error('proof server unreachable'));
+
+    await expect(deploySessionContract(connectedAPI, 'v9')).rejects.toThrow('proof server unreachable');
+
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  test('keeps the join failure visible when releasing the providers also fails', async () => {
+    findDeployedContract.mockRejectedValue(new Error('contract address not found'));
+    dispose.mockRejectedValueOnce(new Error('websocket already closed'));
+
+    await expect(joinSessionContract(connectedAPI, 'v9', CONTRACT_ADDRESS)).rejects.toThrow(
+      'contract address not found'
+    );
+  });
+});

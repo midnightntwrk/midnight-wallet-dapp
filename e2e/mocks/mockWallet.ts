@@ -32,6 +32,13 @@ interface MockConnectedAPI {
   getDustBalance: () => Promise<{ balance: bigint; cap: bigint }>;
   balanceUnsealedTransaction: (hexTx: string) => Promise<string>;
   submitTransaction: (hexTx: string) => Promise<string>;
+  // The dApp builds its proof provider from the wallet rather than from a proof-server URL, so a
+  // wallet without this method cannot open a contract at all. It is never called here: these specs
+  // stop short of deploying, which is the first thing that would prove a transaction.
+  getProvingProvider: () => Promise<{
+    check: (preimage: Uint8Array, keyLocation: string) => Promise<(bigint | undefined)[]>;
+    prove: (preimage: Uint8Array, keyLocation: string) => Promise<Uint8Array>;
+  }>;
 }
 
 interface MockInitialAPI {
@@ -76,6 +83,10 @@ export function createMockWallet(): MockInitialAPI {
         }),
         balanceUnsealedTransaction: async (hexTx: string) => hexTx,
         submitTransaction: async () => '0x' + 'ab'.repeat(32),
+        getProvingProvider: async () => ({
+          check: async () => [],
+          prove: async () => new Uint8Array(),
+        }),
       };
     },
   };
@@ -116,6 +127,10 @@ export function injectMockWalletScript(): string {
         }),
         balanceUnsealedTransaction: async (hexTx) => hexTx,
         submitTransaction: async () => '0x' + 'ab'.repeat(32),
+        getProvingProvider: async () => ({
+          check: async () => [],
+          prove: async () => new Uint8Array(),
+        }),
       }),
     };
   `;

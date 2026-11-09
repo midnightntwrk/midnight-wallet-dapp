@@ -17,12 +17,12 @@
 // scope, and nothing here needs it.
 import {
   protocolVersionToLedger,
-  type LedgerVersion,
+  type LedgerEra,
   type ProtocolVersionSource,
 } from '@midnight-ntwrk/midnight-js-protocol/version';
 
 export type NetworkEra = {
-  readonly ledgerVersion: LedgerVersion;
+  readonly ledgerVersion: LedgerEra;
   readonly protocolVersion: number;
 };
 
