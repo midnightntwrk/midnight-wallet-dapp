@@ -15,7 +15,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { uint8ArrayToHex } from './hex';
+import { uint8ArrayToHex } from '../utils/hex';
 
 describe('uint8ArrayToHex', () => {
   test('pads each byte to two lower-case digits', () => {

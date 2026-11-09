@@ -15,7 +15,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { readNetworkEra } from './era';
+import { readNetworkEra } from '../lib/era';
 
 /** `ProtocolVersionSource` is a single method, so the head can be stood up without a chain. */
 const headAt = (protocolVersion: number) => ({

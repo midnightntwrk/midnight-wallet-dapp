@@ -42,7 +42,7 @@ vi.mock('@midnight-ntwrk/midnight-js-dapp-connector-proof-provider', async (impo
   dappConnectorWalletProviders: vi.fn(() => Promise.resolve({ walletProvider: {}, midnightProvider: {} })),
 }));
 
-import { buildProvidersFromConnectedAPI, type ProviderConnector } from './providers';
+import { buildProvidersFromConnectedAPI, type ProviderConnector } from '../lib/providers';
 
 const SHIELDED = {
   shieldedAddress: 'mn_shield-addr_test',

@@ -23,7 +23,7 @@ const { buildProviders, deployContract, findDeployedContract, dispose } = vi.hoi
   dispose: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('./providers', () => ({ buildProvidersFromConnectedAPI: buildProviders }));
+vi.mock('../lib/providers', () => ({ buildProvidersFromConnectedAPI: buildProviders }));
 
 vi.mock('@midnight-ntwrk/midnight-js/contracts', () => ({
   deployContract,
@@ -32,12 +32,12 @@ vi.mock('@midnight-ntwrk/midnight-js/contracts', () => ({
 
 // The real module loads both compiled artifacts, which pull in the Compact runtime WASM. The era
 // dispatch only forwards these values, so their identity is all that matters here.
-vi.mock('./types', () => ({
+vi.mock('../lib/types', () => ({
   CompiledDemoContract: { marker: 'current' },
   createRetainedContractInstance: () => ({ marker: 'retained' }),
 }));
 
-import { deploySessionContract, joinSessionContract, type ContractEra } from './session';
+import { deploySessionContract, joinSessionContract, type ContractEra } from '../lib/session';
 
 // The dispatch forwards the connector untouched to the mocked provider factory, so it is never read.
 const connectedAPI = {} as ConnectedAPI;
