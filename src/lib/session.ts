@@ -1,0 +1,159 @@
+/*
+ * This file is part of midnight-wallet-dapp.
+ * Copyright (C) Midnight Foundation
+ * SPDX-License-Identifier: Apache-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  deployContract,
+  findDeployedContract,
+  type FoundContract,
+  type Ledger8FoundContract,
+} from '@midnight-ntwrk/midnight-js/contracts';
+import type { LedgerEra } from '@midnight-ntwrk/midnight-js';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
+
+import { buildProvidersFromConnectedAPI, type ProviderBundle } from './providers';
+import {
+  CompiledDemoContract,
+  createRetainedContractInstance,
+  type DemoCircuits,
+  type DemoContract,
+  type DemoProviders,
+  type RetainedCircuits,
+  type RetainedContract,
+  type RetainedProviders,
+} from './types';
+
+const CURRENT_ARTIFACT = 'token-transfers-v9';
+const RETAINED_ARTIFACT = 'token-transfers-v8';
+
+/**
+ * Which toolchain built the contract being called.
+ *
+ * A property of the CONTRACT, not of the network: one deployed before the fork is called with the
+ * retained artifact for the rest of its life, the boundary included. Which pipeline runs underneath
+ * is decided by the network head, and that is the framework's business rather than ours.
+ *
+ * Aliased from the framework rather than re-declared, so a new era cannot arrive without this dApp
+ * failing to compile.
+ */
+export type ContractEra = LedgerEra;
+
+/**
+ * A contract handle of either era.
+ *
+ * Both eras publish `callTx` as one typed method per circuit, and both twins are built from the
+ * same source, so the union is callable directly — `handle.callTx.mintAndReceive(amount)` type-checks
+ * against both arms at once. That is what keeps the era out of every call site.
+ */
+export type ContractHandle = FoundContract<DemoContract> | Ledger8FoundContract<RetainedContract>;
+
+/**
+ * The era is read off `handle.era`, which the framework already tags; a second copy could drift.
+ * `dispose` releases the indexer WebSocket the provider set owns.
+ */
+export type ContractSession = {
+  readonly handle: ContractHandle;
+  readonly dispose: () => Promise<void>;
+};
+
+const currentEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle<DemoCircuits>> =>
+  buildProvidersFromConnectedAPI<DemoCircuits>(connectedAPI, CURRENT_ARTIFACT);
+
+// `require-if-present`: compactc 0.31.1 emits no `contract-manifest.json`, and verification reads
+// exactly that file, so the fail-closed default refuses every pre-fork artifact. This mode skips the
+// check when there is no manifest, but still fails on one that does not certify the artifact.
+const retainedEraProviders = (connectedAPI: ConnectedAPI): Promise<ProviderBundle<RetainedCircuits>> =>
+  buildProvidersFromConnectedAPI<RetainedCircuits>(connectedAPI, RETAINED_ARTIFACT, 'require-if-present');
+
+/**
+ * Refuses an era this dApp carries no artifact for.
+ *
+ * Typed `never`, so a third `LedgerEra` member arriving upstream fails to compile here rather than
+ * falling through to the retained branch and deploying a pre-fork contract under a new era's name.
+ */
+function unsupportedEra(era: never): Error {
+  return new Error(
+    `No compiled artifact for contract era "${String(era)}". Each era needs its own build of the ` +
+      'contract, so a new era needs a new artifact before it can be deployed or joined.'
+  );
+}
+
+/**
+ * Opens a contract with an already-built provider set, releasing it if opening fails.
+ *
+ * The indexer socket is already open by then, so a failed deploy or join must not leak it. Releasing
+ * it is reported but never rethrown: the error worth surfacing is the one that explains why the open
+ * failed, and an unguarded `await` here would replace it with a teardown error instead.
+ */
+async function withCleanup(
+  dispose: () => Promise<void>,
+  open: () => Promise<ContractHandle>
+): Promise<ContractSession> {
+  try {
+    return { handle: await open(), dispose };
+  } catch (error) {
+    await dispose().catch((disposeError: unknown) => {
+      console.error('[session] could not release the providers after a failed open', disposeError);
+    });
+    throw error;
+  }
+}
+
+/**
+ * The one place an era is dispatched to open a session. A new `LedgerEra` member has one branch to
+ * add here rather than one per entry point, and one `unsupportedEra` guard to fall through rather
+ * than two that can drift apart. The dApp dispatches on era elsewhere too — see the selector and the
+ * era badge in `App.tsx` — so this is not the only place a new era needs work.
+ *
+ * Each era's provider set AND its compiled contract are chosen together here, and both are handed to
+ * the opener. That pairing is the point: a ledger-9 provider set is structurally assignable to the
+ * ledger-8 provider type (branded circuit ids are intersections, so they widen), which means neither
+ * the compiler nor a reviewer can catch a set paired with the other era's contract. Leaving the
+ * contract to the caller would put that choice back in reach — so callers receive the pair and only
+ * decide what to DO with it, which is identical in both arms.
+ */
+async function openSession(
+  connectedAPI: ConnectedAPI,
+  era: ContractEra,
+  open: {
+    readonly v9: (providers: DemoProviders, compiledContract: typeof CompiledDemoContract) => Promise<ContractHandle>;
+    readonly v8: (providers: RetainedProviders, contract: RetainedContract) => Promise<ContractHandle>;
+  }
+): Promise<ContractSession> {
+  if (era === 'v9') {
+    const { providers, dispose } = await currentEraProviders(connectedAPI);
+    return withCleanup(dispose, () => open.v9(providers, CompiledDemoContract));
+  }
+  if (era === 'v8') {
+    const { providers, dispose } = await retainedEraProviders(connectedAPI);
+    return withCleanup(dispose, () => open.v8(providers, createRetainedContractInstance()));
+  }
+  throw unsupportedEra(era);
+}
+
+export const deploySessionContract = (connectedAPI: ConnectedAPI, era: ContractEra): Promise<ContractSession> =>
+  openSession(connectedAPI, era, {
+    v9: (providers, compiledContract) => deployContract(providers, { compiledContract }),
+    v8: (providers, compiledContract) => deployContract(providers, { compiledContract }),
+  });
+
+export const joinSessionContract = (
+  connectedAPI: ConnectedAPI,
+  era: ContractEra,
+  contractAddress: string
+): Promise<ContractSession> =>
+  openSession(connectedAPI, era, {
+    v9: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
+    v8: (providers, compiledContract) => findDeployedContract(providers, { compiledContract, contractAddress }),
+  });

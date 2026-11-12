@@ -13,32 +13,25 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState } from 'react';
-import {
-  deployContract,
-  findDeployedContract,
-  type FoundContract,
-  submitCallTx,
-} from '@midnight-ntwrk/midnight-js/contracts';
-import { setNetworkId as setGlobalNetworkId, type NetworkId } from '@midnight-ntwrk/midnight-js/network-id';
-import { buildProvidersFromConnectedAPI } from './lib/providers';
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import React, { useState } from 'react';
+import { deploySessionContract, joinSessionContract, type ContractEra, type ContractSession } from './lib/session';
+import { HardForkPanel } from './components/HardForkPanel';
+import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
-import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
+import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnightntwrk/wallet-sdk-address-format';
 
 import { fetchNodeInfo, type NodeInfo } from './lib/nodeApi';
 import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
 import { getErrorMessage } from './utils/errors';
+import { uint8ArrayToHex } from './utils/hex';
 
-import {
-  CompiledDemoContract,
-  createSimpleContractInstance,
-  DemoCircuits,
-  DemoContract,
-  DemoProviders,
-} from './lib/types';
 import './styles.css';
+
+/** The raw bytes behind a bech32m-encoded unshielded address. */
+function decodeUnshieldedAddress(address: string): Uint8Array {
+  return new Uint8Array(bech32m.fromWords(bech32m.decode(address, 1000).words));
+}
 
 export default function App() {
   const { logs, appendLog } = useActivityLog();
@@ -48,16 +41,14 @@ export default function App() {
   const [connectedAPI, setConnectedAPI] = useState<ConnectedAPI | null>(null);
   const [networkId, setNetworkIdState] = useState<string>('undeployed');
   const [customNetworkId, setCustomNetworkId] = useState<string>('');
-  const [providers, setProviders] = useState<DemoProviders | null>(null);
+  const [session, setSession] = useState<ContractSession | null>(null);
+  const [contractEra, setContractEra] = useState<ContractEra>('v9');
 
   // Direct node access. `substrateNodeUri` comes from the wallet but nothing has ever
   // consumed it, so an unreachable or wrong-network node has been undetectable.
   const [nodeUri, setNodeUri] = useState<string>('');
   const [nodeStatus, setNodeStatus] = useState<'idle' | 'querying' | 'connected' | 'unreachable'>('idle');
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
-
-  const [deployed, setDeployed] = useState<FoundContract<DemoContract> | null>(null);
-  const [contractInstance, setContractInstance] = useState<DemoContract | null>(null);
   const [joinAddress, setJoinAddress] = useState<string>('');
 
   const [mintAmount, setMintAmount] = useState<string>('10000');
@@ -73,15 +64,10 @@ export default function App() {
   const [shieldedDepositAmount, setShieldedDepositAmount] = useState<string>('1500');
   const [shieldedColor, setShieldedColor] = useState<Uint8Array | null>(null);
 
+  // The framework has no global network id since 5.0.0: it reads `providers.config.networkId`,
+  // which `buildProvidersFromConnectedAPI` takes from the wallet's own configuration. This value
+  // only drives the connect call and what the UI shows.
   const effectiveNetworkId = networkId === 'custom' ? customNetworkId : networkId;
-
-  useEffect(() => {
-    try {
-      setGlobalNetworkId(effectiveNetworkId as NetworkId);
-    } catch {
-      // Ignore invalid values
-    }
-  }, [effectiveNetworkId]);
 
   async function onConnectWallet() {
     if (availableAPIs.length === 0) {
@@ -93,37 +79,24 @@ export default function App() {
     appendLog(`Connecting to ${initialAPI.name} (API v${initialAPI.apiVersion})`);
 
     try {
-      try {
-        setGlobalNetworkId(effectiveNetworkId as NetworkId);
-      } catch {
-        // ignore
-      }
-
       const connected = await initialAPI.connect(effectiveNetworkId);
       setConnectedAPI(connected);
       appendLog('Wallet connected successfully');
 
       const config = await connected.getConfiguration();
-      try {
-        const presetNetworks = ['undeployed', 'preview', 'qanet'];
-        if (presetNetworks.includes(config.networkId)) {
-          setNetworkIdState(config.networkId);
-        } else {
-          setNetworkIdState('custom');
-          setCustomNetworkId(config.networkId);
-        }
-        setGlobalNetworkId(config.networkId as NetworkId);
-      } catch {
-        // Fall back to UI state
+      const presetNetworks = ['undeployed', 'preview', 'qanet'];
+      if (presetNetworks.includes(config.networkId)) {
+        setNetworkIdState(config.networkId);
+      } else {
+        setNetworkIdState('custom');
+        setCustomNetworkId(config.networkId);
       }
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
       setNodeUri(config.substrateNodeUri);
       appendLog(`Node: ${config.substrateNodeUri}`);
 
-      const demoCircuitsMidnightProviders = await buildProvidersFromConnectedAPI(connected, 'token-transfers');
-      setProviders(demoCircuitsMidnightProviders);
-      appendLog('Providers initialized for Mint Contract');
+      appendLog('Wallet connected; providers are built per contract era on deploy or join');
 
       try {
         const shieldedBalances = await connected.getShieldedBalances();
@@ -146,9 +119,57 @@ export default function App() {
     }
   }
 
+  /**
+   * Runs one user action: raises the loading flag for its duration, and on failure reports it in one
+   * place — to the console, the activity log and the user.
+   *
+   * `what` is the action as an infinitive phrase ("mint tokens"), so log and alert read alike. Guards
+   * belong OUTSIDE the call, so a refused action never raises the flag.
+   */
+  async function runAction(what: string, action: () => Promise<void>) {
+    setIsLoading(true);
+    try {
+      await action();
+    } catch (e: unknown) {
+      console.error(e);
+      const message = `Failed to ${what}: ${getErrorMessage(e)}`;
+      appendLog(message);
+      alert(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  /**
+   * Throws rather than alerting on its own: it runs inside `runAction`, whose catch is the one place
+   * a failed action is reported.
+   */
+  async function requireUnshieldedAddress(): Promise<string> {
+    const address = await connectedAPI?.getUnshieldedAddress();
+    if (!address?.unshieldedAddress) {
+      throw new Error('the connected wallet supplied no unshielded address');
+    }
+    return address.unshieldedAddress;
+  }
+
+  function clearSession() {
+    // The provider set owns an indexer WebSocket; dropping the reference alone would leak it. The
+    // rejection is caught here rather than left to float: this runs inside `runAction`, but `void`
+    // detaches the promise, so an unguarded failure would surface as an unhandled rejection and reach
+    // neither the activity log nor the user.
+    if (session) {
+      void session.dispose().catch((error: unknown) => {
+        console.error('[App] could not release the providers when clearing the session', error);
+      });
+    }
+    setSession(null);
+    setMintedColor('');
+    setShieldedColor(null);
+  }
+
   function onDisconnect() {
     setConnectedAPI(null);
-    setProviders(null);
+    clearSession();
     setNodeUri('');
     setNodeInfo(null);
     setNodeStatus('idle');
@@ -177,283 +198,143 @@ export default function App() {
     }
   }
 
-  async function onDeploy() {
-    if (!providers) return alert('Connect wallet first');
+  function onDeploy() {
+    if (!connectedAPI) return alert('Connect wallet first');
 
-    setIsLoading(true);
-    try {
-      const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const deployedContract = await deployContract(providers, { compiledContract: CompiledDemoContract });
-      setDeployed(deployedContract);
-      setContractInstance(demoContractInstance);
-      appendLog('Deployed Mint Contract at ' + deployedContract.deployTxData.public.contractAddress);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error deploying contract: ' + getErrorMessage(e));
-      alert('Failed to deploy contract: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    void runAction('deploy contract', async () => {
+      clearSession();
+      const deployed = await deploySessionContract(connectedAPI, contractEra);
+      setSession(deployed);
+      appendLog(`Deployed ${deployed.handle.era} contract at ${deployed.handle.contractAddress}`);
+    });
   }
 
-  async function onJoinContract() {
-    if (!providers) return alert('Connect wallet first');
+  function onJoinContract() {
+    if (!connectedAPI) return alert('Connect wallet first');
     if (!joinAddress.trim()) return alert('Enter a contract address');
 
-    setIsLoading(true);
-    try {
-      const demoContractInstance: DemoContract = createSimpleContractInstance();
-      const foundContract = await findDeployedContract(providers, {
-        compiledContract: CompiledDemoContract,
-        contractAddress: joinAddress.trim(),
-      });
-      setDeployed(foundContract);
-      setContractInstance(demoContractInstance);
-      appendLog('Joined contract at ' + foundContract.deployTxData.public.contractAddress);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error joining contract: ' + getErrorMessage(e));
-      alert('Failed to join contract: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    void runAction('join contract', async () => {
+      clearSession();
+      const joined = await joinSessionContract(connectedAPI, contractEra, joinAddress.trim());
+      setSession(joined);
+      appendLog(`Joined ${joined.handle.era} contract at ${joined.handle.contractAddress}`);
+    });
   }
 
-  async function onMint() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onMint() {
+    if (!session) return alert('Deploy or join a contract first');
 
-    setIsLoading(true);
-    try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'mintAndReceive' as DemoCircuits,
-        args: [BigInt(mintAmount)] as [bigint],
-      } as const;
-      const callTxData = await submitCallTx(providers!, callTxOptions);
-      const colorBytes32 = callTxData.private.result as Uint8Array;
-      const hex = Array.from(colorBytes32)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
+    void runAction('mint tokens', async () => {
+      const callTxData = await session.handle.callTx.mintAndReceive(BigInt(mintAmount));
+      const hex = uint8ArrayToHex(callTxData.private.result as Uint8Array);
       setMintedColor('0x' + hex);
       appendLog(`Minted ${mintAmount} tokens with color 0x${hex}`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error minting tokens: ' + getErrorMessage(e));
-      alert('Failed to mint tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
-  async function onClaim() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onClaim() {
+    if (!session) return alert('Deploy or join a contract first');
 
-    setIsLoading(true);
-    try {
-      const address = await connectedAPI?.getUnshieldedAddress();
+    void runAction('claim tokens', async () => {
+      const unshieldedAddress = await requireUnshieldedAddress();
+      appendLog(`Unshielded address: ${unshieldedAddress}`);
 
-      if (!address?.unshieldedAddress) {
-        return alert('No unshielded address available');
-      }
-
-      appendLog(`Unshielded address: ${address.unshieldedAddress}`);
-
-      const decoded = bech32m.decode(address.unshieldedAddress, 1000);
-      const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
-
+      const addressBytes = decodeUnshieldedAddress(unshieldedAddress);
       appendLog(`Decoded address bytes (${addressBytes.length} bytes)`);
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'sendToUser' as DemoCircuits,
-        args: [BigInt(claimAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
-      appendLog(`Claimed ${claimAmount} tokens to address ${address.unshieldedAddress}`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error claiming tokens: ' + getErrorMessage(e));
-      alert('Failed to claim tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+      await session.handle.callTx.sendToUser(BigInt(claimAmount), { bytes: addressBytes });
+      appendLog(`Claimed ${claimAmount} tokens to address ${unshieldedAddress}`);
+    });
   }
 
-  async function onReceiveTokens() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onReceiveTokens() {
+    if (!session) return alert('Deploy or join a contract first');
 
-    setIsLoading(true);
-    try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveTokens' as DemoCircuits,
-        args: [BigInt(receiveAmount)] as [bigint],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+    void runAction('receive tokens', async () => {
+      await session.handle.callTx.receiveTokens(BigInt(receiveAmount));
       appendLog(`Received ${receiveAmount} tokens`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error receiving tokens: ' + getErrorMessage(e));
-      alert('Failed to receive tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
-  async function onDepositNight() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onDepositNight() {
+    if (!session) return alert('Deploy or join a contract first');
 
-    setIsLoading(true);
-    try {
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveNightTokens' as DemoCircuits,
-        args: [BigInt(depositNightAmount)] as [bigint],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+    void runAction('deposit NIGHT tokens', async () => {
+      await session.handle.callTx.receiveNightTokens(BigInt(depositNightAmount));
       appendLog(`Deposited ${depositNightAmount} STAR (${Number(depositNightAmount) / 1_000_000} NIGHT)`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error depositing NIGHT tokens: ' + getErrorMessage(e));
-      alert('Failed to deposit NIGHT tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
-  async function onWithdrawNight() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onWithdrawNight() {
+    if (!session) return alert('Deploy or join a contract first');
 
-    setIsLoading(true);
-    try {
-      const address = await connectedAPI?.getUnshieldedAddress();
+    void runAction('withdraw NIGHT tokens', async () => {
+      const unshieldedAddress = await requireUnshieldedAddress();
+      appendLog(`Withdrawing to unshielded address: ${unshieldedAddress}`);
 
-      if (!address?.unshieldedAddress) {
-        return alert('No unshielded address available');
-      }
-
-      appendLog(`Withdrawing to unshielded address: ${address.unshieldedAddress}`);
-
-      const decoded = bech32m.decode(address.unshieldedAddress, 1000);
-      const addressBytes = new Uint8Array(bech32m.fromWords(decoded.words));
-
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'sendNightTokensToUser' as DemoCircuits,
-        args: [BigInt(withdrawNightAmount), { bytes: addressBytes }] as [bigint, { bytes: Uint8Array }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      const addressBytes = decodeUnshieldedAddress(unshieldedAddress);
+      await session.handle.callTx.sendNightTokensToUser(BigInt(withdrawNightAmount), { bytes: addressBytes });
       appendLog(
-        `Withdrew ${withdrawNightAmount} STAR (${Number(withdrawNightAmount) / 1_000_000} NIGHT) to ${address.unshieldedAddress}`
+        `Withdrew ${withdrawNightAmount} STAR (${Number(withdrawNightAmount) / 1_000_000} NIGHT) to ${unshieldedAddress}`
       );
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error withdrawing NIGHT tokens: ' + getErrorMessage(e));
-      alert('Failed to withdraw NIGHT tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
-  async function onDepositShielded() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onDepositShielded() {
+    if (!session) return alert('Deploy or join a contract first');
     if (!shieldedColor) return alert('Mint & claim shielded tokens first to obtain a color');
 
-    setIsLoading(true);
-    try {
-      const nonce = crypto.getRandomValues(new Uint8Array(32));
-
+    void runAction('deposit shielded tokens', async () => {
       const coin = {
-        nonce,
+        nonce: crypto.getRandomValues(new Uint8Array(32)),
         color: shieldedColor,
         value: BigInt(shieldedDepositAmount),
       };
 
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'receiveShieldedTokens' as DemoCircuits,
-        args: [coin] as [{ nonce: Uint8Array; color: Uint8Array; value: bigint }],
-      };
-
-      await submitCallTx(providers!, callTxOptions);
+      await session.handle.callTx.receiveShieldedTokens(coin);
       appendLog(`Deposited ${shieldedDepositAmount} shielded tokens`);
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error depositing shielded tokens: ' + getErrorMessage(e));
-      alert('Failed to deposit shielded tokens: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
-  async function onMintAndClaimShielded() {
-    if (!deployed || !contractInstance) return alert('Deploy contract first');
+  function onMintAndClaimShielded() {
+    if (!session) return alert('Deploy or join a contract first');
+    if (!connectedAPI) return alert('Connect wallet first');
 
-    setIsLoading(true);
-    try {
-      const shieldedAddress = await connectedAPI?.getShieldedAddresses();
-      if (!shieldedAddress?.shieldedCoinPublicKey) {
-        return alert('No shielded coin public key available');
+    void runAction('mint & claim shielded', async () => {
+      const { shieldedCoinPublicKey } = await connectedAPI.getShieldedAddresses();
+      // Typed as a required string, but it crosses an extension boundary. Without this the empty and
+      // undefined cases reach bech32 and are reported as "bech32.decode input: string expected",
+      // which names a library the user has never heard of instead of the wallet.
+      if (!shieldedCoinPublicKey) {
+        throw new Error('the connected wallet supplied no shielded coin public key');
       }
 
       // shieldedCoinPublicKey is bech32m-encoded (per dapp-connector API spec) — decode to raw 32 bytes
       const publicKeyBytes = new Uint8Array(
-        ShieldedCoinPublicKey.codec.decode(
-          effectiveNetworkId,
-          MidnightBech32m.parse(shieldedAddress.shieldedCoinPublicKey)
-        ).data
+        ShieldedCoinPublicKey.codec.decode(effectiveNetworkId, MidnightBech32m.parse(shieldedCoinPublicKey)).data
       );
 
-      const domainSep = crypto.getRandomValues(new Uint8Array(32));
-      const nonce = crypto.getRandomValues(new Uint8Array(32));
-
-      const callTxOptions = {
-        compiledContract: CompiledDemoContract,
-        contractAddress: deployed.deployTxData.public.contractAddress,
-        circuitId: 'mintAndSendShielded' as DemoCircuits,
-        args: [
-          domainSep,
-          BigInt(shieldedMintAmount),
-          nonce,
-          { bytes: publicKeyBytes },
-          BigInt(shieldedClaimAmount),
-        ] as [Uint8Array, bigint, Uint8Array, { bytes: Uint8Array }, bigint],
-      };
-
-      const callTxData = await submitCallTx(providers!, callTxOptions);
+      const callTxData = await session.handle.callTx.mintAndSendShielded(
+        crypto.getRandomValues(new Uint8Array(32)),
+        BigInt(shieldedMintAmount),
+        crypto.getRandomValues(new Uint8Array(32)),
+        { bytes: publicKeyBytes },
+        BigInt(shieldedClaimAmount)
+      );
       const result = callTxData.private.result as {
         change: { is_some: boolean; value: { nonce: Uint8Array; color: Uint8Array; value: bigint } };
         sent: { nonce: Uint8Array; color: Uint8Array; value: bigint };
       };
 
       setShieldedColor(result.sent.color);
-      const colorHex = Array.from(result.sent.color)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
       appendLog(
-        `Minted ${shieldedMintAmount} and claimed ${shieldedClaimAmount} shielded tokens (color: 0x${colorHex})`
+        `Minted ${shieldedMintAmount} and claimed ${shieldedClaimAmount} shielded tokens (color: 0x${uint8ArrayToHex(result.sent.color)})`
       );
       appendLog(`  Claimed coin value: ${result.sent.value}`);
       if (result.change.is_some) {
         appendLog(`  Change coin value: ${result.change.value.value}`);
       }
-    } catch (e: unknown) {
-      console.error(e);
-      appendLog('Error in mint & claim shielded: ' + getErrorMessage(e));
-      alert('Failed to mint & claim shielded: ' + getErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   return (
@@ -566,7 +447,37 @@ export default function App() {
           </div>
         </section>
 
-        {/* Contract Section */}
+        {/* Era — which ledger the contract speaks, and where the network head is. Read these
+            before opening a contract: they decide which artifact a deploy or join must use. */}
+        <div className="contract-setup-grid">
+          <section className="contract-card">
+            <div className="contract-card-header">
+              <h3>Contract Era</h3>
+              <span className="contract-card-badge badge-secondary">{contractEra}</span>
+            </div>
+            <div className="contract-card-content">
+              <div className="form-group">
+                <label htmlFor="contractEra">Which toolchain built the contract</label>
+                <select
+                  id="contractEra"
+                  value={contractEra}
+                  onChange={(e) => setContractEra(e.target.value as ContractEra)}
+                  className="input"
+                  disabled={!!session || isLoading}
+                >
+                  <option value="v9">Current (compactc 0.36.0, ledger v9)</option>
+                  <option value="v8">Pre-fork (compactc 0.31.1, ledger v8)</option>
+                </select>
+              </div>
+              <p className="hint">
+                A contract keeps the era it was deployed with, the fork included. Pick pre-fork to deploy on a ledger-v8
+                chain, or to call a contract that was deployed there.
+              </p>
+            </div>
+          </section>
+          <HardForkPanel connectedAPI={connectedAPI} appendLog={appendLog} />
+        </div>
+        {/* Open a contract */}
         <div className="contract-setup-grid">
           <section className="contract-card">
             <div className="contract-card-header">
@@ -576,7 +487,7 @@ export default function App() {
             <div className="contract-card-content">
               <button
                 onClick={onDeploy}
-                disabled={!providers || !!deployed || isLoading}
+                disabled={!connectedAPI || !!session || isLoading}
                 className="btn btn-primary btn-block"
               >
                 {isLoading ? 'Processing...' : 'Deploy Contract'}
@@ -596,12 +507,12 @@ export default function App() {
                   onChange={(e) => setJoinAddress(e.target.value)}
                   className="input"
                   placeholder="Enter contract address..."
-                  disabled={!!deployed || isLoading}
+                  disabled={!!session || isLoading}
                 />
               </div>
               <button
                 onClick={onJoinContract}
-                disabled={!providers || !joinAddress.trim() || !!deployed || isLoading}
+                disabled={!connectedAPI || !joinAddress.trim() || !!session || isLoading}
                 className="btn btn-primary btn-block"
               >
                 {isLoading ? 'Processing...' : 'Join Contract'}
@@ -611,7 +522,7 @@ export default function App() {
         </div>
         <div className="info-box" style={{ marginBottom: '1.25rem' }}>
           <span className="info-label">Contract Address:</span>
-          <code className="address">{deployed?.deployTxData.public.contractAddress ?? '—'}</code>
+          <code className="address">{session?.handle.contractAddress ?? '—'}</code>
         </div>
 
         {/* Token Operations */}
@@ -700,11 +611,7 @@ export default function App() {
                   placeholder="1000"
                 />
               </div>
-              <button
-                onClick={onMint}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onMint} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Mint Tokens'}
               </button>
               <div className="info-box">
@@ -727,7 +634,7 @@ export default function App() {
               </div>
               <button
                 onClick={onClaim}
-                disabled={!deployed || !mintedColor || !providers || isLoading}
+                disabled={!session || !mintedColor || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Claim Tokens'}
@@ -746,11 +653,7 @@ export default function App() {
                   placeholder="100"
                 />
               </div>
-              <button
-                onClick={onReceiveTokens}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onReceiveTokens} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Deposit Tokens'}
               </button>
             </div>
@@ -776,11 +679,7 @@ export default function App() {
                   placeholder="1500"
                 />
               </div>
-              <button
-                onClick={onDepositNight}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onDepositNight} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Deposit NIGHT'}
               </button>
 
@@ -797,11 +696,7 @@ export default function App() {
                   placeholder="500"
                 />
               </div>
-              <button
-                onClick={onWithdrawNight}
-                disabled={!deployed || !providers || isLoading}
-                className="btn btn-accent btn-block"
-              >
+              <button onClick={onWithdrawNight} disabled={!session || isLoading} className="btn btn-accent btn-block">
                 {isLoading ? 'Processing...' : 'Withdraw NIGHT'}
               </button>
             </div>
@@ -838,7 +733,7 @@ export default function App() {
               </div>
               <button
                 onClick={onMintAndClaimShielded}
-                disabled={!deployed || !providers || isLoading}
+                disabled={!session || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Mint & Claim Shielded'}
@@ -871,7 +766,7 @@ export default function App() {
               </div>
               <button
                 onClick={onDepositShielded}
-                disabled={!deployed || !providers || !shieldedColor || isLoading}
+                disabled={!session || !shieldedColor || isLoading}
                 className="btn btn-accent btn-block"
               >
                 {isLoading ? 'Processing...' : 'Deposit Shielded'}

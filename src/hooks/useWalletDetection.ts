@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { InitialAPI } from '@midnight-ntwrk/dapp-connector-api';
+import type { InitialAPI } from '@midnightntwrk/dapp-connector-api';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MidnightWindow = Window & { midnight?: Record<string, any>; cardano?: unknown };
