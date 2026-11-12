@@ -587,7 +587,7 @@ export default function App() {
               <button
                 onClick={onQueryNode}
                 disabled={!nodeUri || nodeStatus === 'querying'}
-                className="btn btn-accent btn-block"
+                className="btn btn-secondary btn-block"
               >
                 {nodeStatus === 'querying' ? 'Querying...' : 'Query Node'}
               </button>
