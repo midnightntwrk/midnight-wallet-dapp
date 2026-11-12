@@ -20,6 +20,7 @@ import type { ConnectedAPI } from '@midnightntwrk/dapp-connector-api';
 import { bech32m } from 'bech32';
 import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnightntwrk/wallet-sdk-address-format';
 
+import { fetchNodeInfo, type NodeInfo } from './lib/nodeApi';
 import { useActivityLog } from './hooks/useActivityLog';
 import { useWalletDetection } from './hooks/useWalletDetection';
 import { getErrorMessage } from './utils/errors';
@@ -42,6 +43,12 @@ export default function App() {
   const [customNetworkId, setCustomNetworkId] = useState<string>('');
   const [session, setSession] = useState<ContractSession | null>(null);
   const [contractEra, setContractEra] = useState<ContractEra>('v9');
+
+  // Direct node access. `substrateNodeUri` comes from the wallet but nothing has ever
+  // consumed it, so an unreachable or wrong-network node has been undetectable.
+  const [nodeUri, setNodeUri] = useState<string>('');
+  const [nodeStatus, setNodeStatus] = useState<'idle' | 'querying' | 'connected' | 'unreachable'>('idle');
+  const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
   const [joinAddress, setJoinAddress] = useState<string>('');
 
   const [mintAmount, setMintAmount] = useState<string>('10000');
@@ -86,6 +93,8 @@ export default function App() {
       }
       appendLog(`Network: ${config.networkId}`);
       appendLog(`Indexer: ${config.indexerUri}`);
+      setNodeUri(config.substrateNodeUri);
+      appendLog(`Node: ${config.substrateNodeUri}`);
 
       appendLog('Wallet connected; providers are built per contract era on deploy or join');
 
@@ -161,7 +170,32 @@ export default function App() {
   function onDisconnect() {
     setConnectedAPI(null);
     clearSession();
+    setNodeUri('');
+    setNodeInfo(null);
+    setNodeStatus('idle');
     appendLog('Disconnected');
+  }
+
+  async function onQueryNode() {
+    if (!nodeUri) return alert('Connect wallet first');
+
+    setNodeStatus('querying');
+    setNodeInfo(null);
+    try {
+      const info = await fetchNodeInfo(nodeUri);
+      setNodeInfo(info);
+      setNodeStatus('connected');
+      appendLog(
+        `Node ${info.chain} (${info.nodeName} ${info.nodeVersion}) - finalized #${info.finalizedHeight}, ${info.peers} peer(s)`
+      );
+      appendLog(`Node runtime ${info.specName}/${info.specVersion}, genesis ${info.genesisHash.slice(0, 10)}...`);
+      if (info.ledgerVersion) appendLog(`Node ledger version: ${info.ledgerVersion}`);
+    } catch (e: unknown) {
+      console.error(e);
+      setNodeInfo(null);
+      setNodeStatus('unreachable');
+      appendLog('Node unreachable: ' + getErrorMessage(e));
+    }
   }
 
   function onDeploy() {
@@ -493,6 +527,73 @@ export default function App() {
 
         {/* Token Operations */}
         <section className="contracts-grid">
+          {/* Node Card - talks to the node directly, not via wallet or indexer */}
+          <div className="card">
+            <div className="card-header">
+              <h2>Node (direct)</h2>
+            </div>
+            <div className="card-content">
+              <div className="info-box">
+                <span className="info-label">Node URI:</span>
+                <code className="color-code" data-testid="node-uri">
+                  {nodeUri || '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Status:</span>
+                <code className="color-code" data-testid="node-status">
+                  {nodeStatus}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Chain:</span>
+                <code className="color-code" data-testid="node-chain">
+                  {nodeInfo?.chain ?? '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Version:</span>
+                <code className="color-code" data-testid="node-version">
+                  {nodeInfo?.nodeVersion ?? '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Peers:</span>
+                <code className="color-code" data-testid="node-peers">
+                  {nodeInfo ? String(nodeInfo.peers) : '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Finalized:</span>
+                <code className="color-code" data-testid="node-finalized">
+                  {nodeInfo ? nodeInfo.finalizedHeight.toLocaleString() : '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">Ledger:</span>
+                <code className="color-code" data-testid="node-ledger-version">
+                  {nodeInfo?.ledgerVersion ?? '—'}
+                </code>
+              </div>
+              <div className="info-box">
+                <span className="info-label">API versions:</span>
+                <code className="color-code" data-testid="node-api-versions">
+                  {nodeInfo?.apiVersions?.join(', ') ?? '—'}
+                </code>
+              </div>
+
+              <div className="divider"></div>
+
+              <button
+                onClick={onQueryNode}
+                disabled={!nodeUri || nodeStatus === 'querying'}
+                className="btn btn-secondary btn-block"
+              >
+                {nodeStatus === 'querying' ? 'Querying...' : 'Query Node'}
+              </button>
+            </div>
+          </div>
+
           {/* Unshielded Tokens Card */}
           <div className="card">
             <div className="card-header">
